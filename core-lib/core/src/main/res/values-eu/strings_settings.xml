@@ -1364,12 +1364,6 @@
     <string name="settings_nav_hide_after_desc">Flotatzailea soilik: fokua uzten duenetik barra zenbat denbora itxaroten duen</string>
     <string name="settings_nav_widen">Zabaldu fokuan</string>
     <string name="settings_nav_widen_desc">Ainguratua eta Trinkoa: izenak edukiaren gainean erakusten ditu barrak fokua duen bitartean</string>
-    <string name="settings_nav_menu_labels">Menuko etiketak</string>
-    <string name="settings_nav_menu_labels_desc">Atalen izenak ikonoen ondoan: inoiz ez, barrak fokua duen bitartean, edo beti</string>
-    <string name="settings_nav_menu_labels_focused">Fokuan</string>
-    <string name="settings_nav_menu_labels_always">Beti</string>
-    <string name="settings_nav_menu_labels_summary">Etiketak: <xliff:g id="choice">%1$s</xliff:g></string>
-    <string name="settings_search_keywords_menu_labels">etiketak, izenak, testua, ikonoak soilik, barra, alboko barra, menua, zabaldu, zabala</string>
     <string name="settings_nav_menu_items">Menu-elementuak</string>
     <string name="settings_nav_menu_items_desc">Dinamikoa: erreprodukzio-zerrendak duenari jarraitzen dio · Estatikoa: zuk aukeratzen dituzu</string>
     <string name="settings_nav_bar">Barra</string>
@@ -1584,7 +1578,6 @@
     <string name="settings_help_timeshift_window">Berrikusterik gabeko kanal batean Pausatu eta atzeratu zuzeneko telebistak zenbat atzera egin dezakeen. Luzeagoak kanalaren zati handiago bat mantentzen du gailu honen biltegiratzean.</string>
     <string name="settings_help_resume">Galdetu jarraitzeko aukerak Jarraitu edo Hasi berriro eskaintzen du film edo atal batek gordetako posizioa duenean. Jarraitu beti gelditu zinen tokian jarraitzen du; Ez jarraitu inoiz hasieratik hasten da.</string>
     <string name="settings_help_mini">Arakatzen ari zaren bitartean kanal bat izkina batean martxan mantentzen duen erreproduzigailu txikia. Aukeratu bere tamaina eta kokatzen den izkina.</string>
-    <string name="settings_help_pip">Sakatu Hasiera edo ireki beste aplikazio bat bideo bat pantaila osoan edo mini erreproduzigailuan erreproduzitzen ari den bitartean, eta leiho txiki batean jarraituko du telebistaren gainerakoaren gainean. Ireki berriro DPTV-Player pantaila osora itzultzeko; itxi leihoa erreprodukzioa gelditzeko. Multiview DPTV-Player barruan geratzen da.</string>
     <string name="settings_key_palette">Paleta</string>
     <string name="settings_live_preview_note">Aldaketak hemen erakusten dira mugitzen zarenean, errenkada utzi aurretik.</string>
     <string name="settings_synced_at">Sinkronizatuta: <xliff:g id="when">%1$s</xliff:g></string>
