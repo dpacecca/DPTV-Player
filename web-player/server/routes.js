@@ -134,6 +134,22 @@ export function apiRouter(sessions) {
   }));
 
   /**
+   * (2.9.16) The EPG ids with a programme in [from, to) whose title contains ?q (any case), so the page's
+   * search finds programmes on every channel, not only those it has loaded. At most 2000 ids.
+   */
+  router.get('/guide/search', wrap(async (req, res) => {
+    const { from, to } = windowOf(req.query);
+    const q = String(req.query.q || '').trim().toLowerCase();
+    if (q.length < 2) return res.json({ ids: [] });
+    const ids = [];
+    for (const [id, list] of await loadGuide(req.login)) {
+      if (inWindow(list, from, to).some((p) => p.title.toLowerCase().includes(q))) ids.push(id);
+      if (ids.length >= 2000) break;
+    }
+    res.json({ ids });
+  }));
+
+  /**
    * The same for a batch of EPG ids in the body ({ from, to, ids }), so the page loads the guide for the
    * rows it shows instead of every channel at once.
    */

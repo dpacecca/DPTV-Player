@@ -121,6 +121,11 @@ test('signed in: channels, guide and the stream relayed through the redirect', a
   })).json();
   assert.deepEqual(Object.keys(batch.channels), ['sky1']);
 
+  // The day bar's search finds channels by programme title (any case), from the server's guide.
+  assert.deepEqual((await (await get('/api/guide/search?q=rug')).json()).ids, ['sky1']);
+  assert.deepEqual((await (await get('/api/guide/search?q=cricket')).json()).ids, []);
+  assert.deepEqual((await (await get('/api/guide/search?q=r')).json()).ids, [], 'one letter is too short to search');
+
   const stream = await get('/api/live/7/stream');
   assert.equal(stream.status, 200);
   assert.equal(stream.headers.get('content-type'), 'video/mp2t');

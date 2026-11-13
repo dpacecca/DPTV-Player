@@ -111,9 +111,6 @@ export function Watch({ user, sso, onSignedOut }: { user: string; sso: boolean; 
             {active === 0 && scheduled > 0 && <span className="badge" title={`${scheduled} scheduled`}>{scheduled}</span>}
           </button>
         </nav>
-        {view === 'live' && (
-          <input className="search" type="search" placeholder="Search channels" value={query} onChange={(e) => setQuery(e.target.value)} />
-        )}
         <div className="header-end">
           <span className="muted user">{user}</span>
           <button className="icon-btn" onClick={() => setSettingsOpen(true)} title="Settings" aria-label="Settings">
@@ -124,7 +121,7 @@ export function Watch({ user, sso, onSignedOut }: { user: string; sso: boolean; 
       {error && <div className="banner error">{error}</div>}
       {loading && <div className="loading-bar" />}
       {view === 'live' ? (
-        <LiveTv categories={categories} channels={channels} query={query} favourites={favourites} toggleFavourite={toggleFavourite} rec={rec} />
+        <LiveTv categories={categories} channels={channels} query={query} onQuery={setQuery} favourites={favourites} toggleFavourite={toggleFavourite} rec={rec} />
       ) : (
         <Dvr
           recordings={recordings}

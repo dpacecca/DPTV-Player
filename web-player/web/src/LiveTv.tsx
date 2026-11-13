@@ -22,10 +22,11 @@ export type RecordActions = {
  * day chips, then the categories and the guide. Click a channel or programme to preview the channel (and see the programme, with Record);
  * double-click it, or the video, for full screen.
  */
-export function LiveTv({ categories, channels, query, favourites, toggleFavourite, rec }: {
+export function LiveTv({ categories, channels, query, onQuery, favourites, toggleFavourite, rec }: {
   categories: Category[];
   channels: Channel[];
   query: string;
+  onQuery: (q: string) => void;
   favourites: Set<string>;
   toggleFavourite: (id: string) => void;
   rec: RecordActions;
@@ -61,13 +62,31 @@ export function LiveTv({ categories, channels, query, favourites, toggleFavourit
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channels]);
 
+  // (2.9.16) The search finds channels by name and, from the guide on the server, by programme title on the day shown.
+  const [titleHits, setTitleHits] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) { setTitleHits(new Set()); return; }
+    let stale = false;
+    const t = window.setTimeout(() => {
+      api.guideSearch(q, from, to)
+        .then((r) => { if (!stale) setTitleHits(new Set(r.ids)); })
+        .catch(() => { if (!stale) setTitleHits(new Set()); });
+    }, 300);
+    return () => { stale = true; window.clearTimeout(t); };
+  }, [query, from, to]);
+
+  // Back to today, the timeline on now.
+  const [jumpKey, setJumpKey] = useState(0);
+  const jumpToNow = () => { setDayOffset(0); setJumpKey((k) => k + 1); };
+
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (q) return channels.filter((c) => c.name.toLowerCase().includes(q));
+    if (q) return channels.filter((c) => c.name.toLowerCase().includes(q) || (c.epgId && titleHits.has(c.epgId)));
     if (category === FAVOURITES) return channels.filter((c) => favourites.has(c.id));
     if (category === ALL) return channels;
     return channels.filter((c) => c.categoryId === category);
-  }, [channels, category, query, favourites]);
+  }, [channels, category, query, favourites, titleHits]);
 
   const counts = useMemo(() => {
     const m = new Map<string, number>();
@@ -179,11 +198,16 @@ export function LiveTv({ categories, channels, query, favourites, toggleFavourit
           <span className="cat-toggle-name">{catName}</span>
           <span className="count">{shown.length}</span>
         </button>
+        <label className="guide-search">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M20 20l-4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+          <input type="search" placeholder="Search programs or channels..." value={query} onChange={(e) => onQuery(e.target.value)} aria-label="Search programs or channels" />
+        </label>
         <div className="day-chips">
           {days.map((d, i) => (
             <button key={d} className={i === dayOffset ? 'chip day on' : 'chip day'} onClick={() => setDayOffset(i)}>{dayLabel(d, today)}</button>
           ))}
         </div>
+        <button className="chip jump-now" onClick={jumpToNow}>Jump to now</button>
       </div>
 
       <div className="guide-area">
@@ -209,7 +233,7 @@ export function LiveTv({ categories, channels, query, favourites, toggleFavourit
           onSelect={(c, p) => setSelection({ channelId: c.id, start: p?.start ?? 0 })}
           onPlay={play}
           onVisible={onVisible}
-          resetKey={`${category}|${query}|${from}`}
+          resetKey={`${category}|${query}|${from}|${jumpKey}`}
         />
       </div>
     </div>
