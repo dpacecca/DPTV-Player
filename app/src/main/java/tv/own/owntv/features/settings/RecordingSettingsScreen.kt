@@ -59,6 +59,7 @@ internal fun RecordingSettingsRows(
     val recordWatching by vm.recordWhatImWatching.collectAsStateWithLifecycle()
     val serverUrl by recordingsVm.recorderServerUrl.collectAsStateWithLifecycle()
     val apiKey by recordingsVm.recorderApiKey.collectAsStateWithLifecycle()
+    val keyFromServer by recordingsVm.recorderSignedInByServer.collectAsStateWithLifecycle()
     val serverTest by recordingsVm.serverTest.collectAsStateWithLifecycle()
 
     val preRollFocus = remember { FocusRequester() }
@@ -150,7 +151,13 @@ internal fun RecordingSettingsRows(
         icon = OwnTVIcon.NETWORK,
         title = stringResource(R.string.settings_recorder_api_key),
         desc = stringResource(R.string.settings_recorder_api_key_description),
-        chip = stringResource(if (apiKey.isNotBlank()) R.string.settings_recorder_key_set else R.string.settings_recorder_key_not_set),
+        chip = stringResource(
+            when {
+                apiKey.isBlank() -> R.string.settings_recorder_key_not_set
+                keyFromServer -> R.string.settings_recorder_key_from_server
+                else -> R.string.settings_recorder_key_set
+            },
+        ),
         primaryChip = apiKey.isNotBlank(),
         chevron = true,
         onClick = { dialogReturn = apiKeyFocus; dialog = RecordingDialog.API_KEY },

@@ -31,6 +31,11 @@ on the TV records to, so they happen whether the page is open or not. In DPTV-Re
 - open **Settings** (the gear) in DPTV Web and enter the recorder's address and key (per login; kept
   sealed in `/data/recorder-settings.json`, it wins over the container's).
 
+With neither, and a DPTV-Server (1.0.11 or later) that names its recorder, there's nothing to set up: DPTV Web
+signs each login in to that recorder with the same DPTV-Server login (DPTV-Recorder 2.7.0 or later, with
+DPTV-Server trusted in its Admin page) and keeps the key it issues. Settings shows it as signed in with your
+DPTV-Server login; **Remove** turns it off for that login.
+
 The key never reaches the browser: DPTV Web makes every call, and relays a recording's file (with seeking).
 Recording a programme that already aired uses the provider's archive (catch-up), as on the TV.
 `.ts` recordings play through mpegts.js; `.mkv` ones play in the browser's own player (Chrome and Edge).

@@ -1,5 +1,6 @@
 package tv.own.owntv.core.settings
 
+import tv.own.owntv.core.recording.RecorderSignInRules
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.MutablePreferences
@@ -487,6 +488,11 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         // secret and, like every key not listed in the backup's lists, is never exported.
         val RECORDER_SERVER_URL = stringPreferencesKey("recorder_server_url")
         val RECORDER_API_KEY = stringPreferencesKey("recorder_api_key")
+        // (DPTV v2.9.14) Set when this device signed in to the recorder with its DPTV-Server login:
+        // which recorder, login and playlist the key came from. Cleared by any change made in Settings,
+        // and RECORDER_SET_BY_HAND then keeps the automatic sign-in away for good.
+        val RECORDER_SIGNED_IN_AS = stringPreferencesKey("recorder_signed_in_as")
+        val RECORDER_SET_BY_HAND = booleanPreferencesKey("recorder_set_by_hand")
         // Video Player Settings
         val HW_DECODING = booleanPreferencesKey("hw_decoding")
         val SOFTWARE_DECODE_ABOVE_1080P = booleanPreferencesKey("software_decode_above_1080p")
@@ -2748,13 +2754,56 @@ class SettingsRepository(private val context: Context, private val localeStore: 
 
     /** The DPTV-Recorder server's address, e.g. `http://192.168.1.10:3000`; blank = record on this device. */
     val recorderServerUrl: Flow<String> = prefsFlow { it[Keys.RECORDER_SERVER_URL] ?: "" }
-    suspend fun setRecorderServerUrl(url: String) { context.dataStore.edit { it[Keys.RECORDER_SERVER_URL] = url.trim() } }
+    suspend fun setRecorderServerUrl(url: String) {
+        context.dataStore.edit {
+            it[Keys.RECORDER_SERVER_URL] = url.trim()
+            it[Keys.RECORDER_SET_BY_HAND] = true
+            it.remove(Keys.RECORDER_SIGNED_IN_AS)
+        }
+    }
     suspend fun currentRecorderServerUrl(): String = context.dataStore.data.first()[Keys.RECORDER_SERVER_URL] ?: ""
 
     /** The API key generated in the server's Settings → Account → API keys. A secret: never backed up. */
     val recorderApiKey: Flow<String> = prefsFlow { it[Keys.RECORDER_API_KEY] ?: "" }
-    suspend fun setRecorderApiKey(key: String) { context.dataStore.edit { it[Keys.RECORDER_API_KEY] = key.trim() } }
+    suspend fun setRecorderApiKey(key: String) {
+        context.dataStore.edit {
+            it[Keys.RECORDER_API_KEY] = key.trim()
+            it[Keys.RECORDER_SET_BY_HAND] = true
+            it.remove(Keys.RECORDER_SIGNED_IN_AS)
+        }
+    }
     suspend fun currentRecorderApiKey(): String = context.dataStore.data.first()[Keys.RECORDER_API_KEY] ?: ""
+
+    /** (DPTV v2.9.14) True while the key is one the recorder issued for this device's DPTV-Server login. */
+    val recorderSignedInByServer: Flow<Boolean> = prefsFlow { !it[Keys.RECORDER_SIGNED_IN_AS].isNullOrEmpty() }
+
+    /** (DPTV v2.9.14) Where the recorder settings came from, for the automatic sign-in. */
+    suspend fun recorderOrigin(): RecorderSignInRules.Origin {
+        val prefs = context.dataStore.data.first()
+        return RecorderSignInRules.Origin(
+            url = prefs[Keys.RECORDER_SERVER_URL] ?: "",
+            key = prefs[Keys.RECORDER_API_KEY] ?: "",
+            signedInAs = prefs[Keys.RECORDER_SIGNED_IN_AS] ?: "",
+            setByHand = prefs[Keys.RECORDER_SET_BY_HAND] ?: false,
+        )
+    }
+
+    /** A key the recorder issued for this device's DPTV-Server login; Settings shows it like a typed one. */
+    suspend fun setRecorderSignedIn(url: String, key: String, signedInAs: String) {
+        context.dataStore.edit {
+            it[Keys.RECORDER_SERVER_URL] = url
+            it[Keys.RECORDER_API_KEY] = key
+            it[Keys.RECORDER_SIGNED_IN_AS] = signedInAs
+        }
+    }
+
+    /** A key the recorder no longer accepts (the login was disabled there): forget it, sign in again later. */
+    suspend fun clearRecorderSignIn() {
+        context.dataStore.edit {
+            it.remove(Keys.RECORDER_API_KEY)
+            it.remove(Keys.RECORDER_SIGNED_IN_AS)
+        }
+    }
 
     /** Read once, when a recording's window is being worked out. */
     suspend fun recordingRollMinutes(): Pair<Int, Int> =

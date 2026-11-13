@@ -423,6 +423,8 @@
     <string name="settings_recorder_api_key_description">Generate one in DPTV Recorder under Settings › Account › API keys.</string>
     <string name="settings_recorder_key_set">Set</string>
     <string name="settings_recorder_key_not_set">Not set</string>
+    <!-- (DPTV v2.9.14) Chip: the key came from signing in with the DPTV-Server login, not typed in. -->
+    <string name="settings_recorder_key_from_server">From DPTV-Server</string>
     <string name="settings_recorder_test">Test recording server</string>
     <string name="settings_recorder_test_description">Check that the address and API key work.</string>
     <string name="settings_recorder_testing">Testing…</string>

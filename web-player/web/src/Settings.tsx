@@ -60,18 +60,25 @@ export function Settings({ recorder, onRecorder, user, sso, version, onClose, on
           <h3>Recording server</h3>
           <p className="muted">
             DPTV-Recorder records for you, whether this page is open or not - the same server DPTV-Player on
-            your TV uses. Make an API key in DPTV-Recorder → Settings → Account → API keys.
+            your TV uses. With a DPTV-Server that names its recorder this is set up for you; otherwise make an API
+            key in DPTV-Recorder → Settings → Account → API keys.
           </p>
           {recorder?.source === 'server' && (
             <p className="note">Set for everyone on this DPTV Web: <span className="mono">{recorder.url}</span>. Enter your own below to use a different one.</p>
           )}
           {recorder?.source === 'user' && <p className="note">Connected to <span className="mono">{recorder.url}</span>.</p>}
+          {recorder?.source === 'dptv' && (
+            <p className="note">
+              Signed in with your DPTV-Server login to <span className="mono">{recorder.url}</span>, the recorder your
+              DPTV-Server names. Enter your own below to use a different one, or Remove to stop recording.
+            </p>
+          )}
           <form className="form" onSubmit={save}>
             <label>Address<input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="http://192.168.1.10:3000" autoComplete="off" /></label>
             <label>API key<input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={recorder?.source === 'user' ? 'Enter again to change' : 'dptv_…'} type="password" autoComplete="off" /></label>
             <div className="row-actions">
               <button className="btn primary" disabled={busy || !url || !apiKey}>{busy ? 'Checking…' : 'Save'}</button>
-              {recorder?.source === 'user' && <button type="button" className="btn ghost danger" disabled={busy} onClick={clear}>Remove</button>}
+              {(recorder?.source === 'user' || recorder?.source === 'dptv') && <button type="button" className="btn ghost danger" disabled={busy} onClick={clear}>Remove</button>}
             </div>
           </form>
           {message && <p className={message.ok ? 'ok' : 'error'}>{message.text}</p>}

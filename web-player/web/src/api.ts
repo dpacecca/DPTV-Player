@@ -19,7 +19,7 @@ export type Recording = {
   error: string | null;
   filename: string | null;
 };
-export type RecorderConfig = { configured: boolean; source: 'user' | 'server' | null; url: string };
+export type RecorderConfig = { configured: boolean; source: 'user' | 'server' | 'dptv' | null; url: string };
 export type Playback = { url: string; type: 'ts' | 'mkv' | 'mp4'; growing: boolean };
 
 export class ApiError extends Error {
