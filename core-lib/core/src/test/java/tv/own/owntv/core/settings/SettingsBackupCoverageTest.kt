@@ -42,6 +42,8 @@ class SettingsBackupCoverageTest {
         "proxy_pass", "tmdb_api_key", "open_subtitles_api_key",
         // The DPTV-Recorder server: its key is a secret, and its address belongs with the key on this device.
         "recorder_server_url", "recorder_api_key",
+        // (DPTV v2.9.14) Where this device's recorder key came from: belongs with the key, on this device.
+        "recorder_signed_in_as", "recorder_set_by_hand",
     )
 
     private fun allKeys(): List<Preferences.Key<*>> =
