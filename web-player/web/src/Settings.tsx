@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { api, RecorderConfig } from './api';
 import { browserCodecs } from './codecs';
+import { BUFFER_PRESETS, BufferMode, loadBufferMode, saveBufferMode } from './playback';
 
 /** Settings: the DPTV-Recorder that makes recordings for this login, and the account. */
 export function Settings({ recorder, onRecorder, user, sso, version, onClose, onSignOut, onChangeLogin }: {
@@ -78,6 +79,7 @@ export function Settings({ recorder, onRecorder, user, sso, version, onClose, on
 
         <section>
           <h3>Playback in this browser</h3>
+          <Buffer />
           <Codecs />
         </section>
 
@@ -91,6 +93,32 @@ export function Settings({ recorder, onRecorder, user, sso, version, onClose, on
         </section>
         <p className="muted version">DPTV Web {version}</p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Live TV's buffer, for this browser only: a phone on 4G/5G wants more in hand than a PC on cable. A change
+ * applies to the channel playing at once (it re-tunes).
+ */
+function Buffer() {
+  const [mode, setMode] = useState<BufferMode>(loadBufferMode);
+  const choose = (m: BufferMode) => { setMode(m); saveBufferMode(m); };
+  return (
+    <div className="buffer-setting">
+      <div className="setting-label">Live TV buffer</div>
+      <div className="choice-list" role="radiogroup" aria-label="Live TV buffer">
+        {BUFFER_PRESETS.map((p) => (
+          <label key={p.mode} className={`choice${mode === p.mode ? ' on' : ''}`}>
+            <input type="radio" name="buffer" checked={mode === p.mode} onChange={() => choose(p.mode)} />
+            <span className="choice-text">
+              <span className="choice-title">{p.label}</span>
+              <span className="muted">{p.hint}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+      <p className="muted">Applies to this browser only, so a phone and a PC can each keep their own. More buffer means fewer stalls on an unsteady connection, a few more seconds behind live, and a slower start.</p>
     </div>
   );
 }
