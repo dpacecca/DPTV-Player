@@ -3108,6 +3108,17 @@
 1	technical	core/src/main/java/tv/own/owntv/core/recording/HlsMediaPlaylist.kt	URI
 1	mime	core/src/main/java/tv/own/owntv/core/recording/HlsMediaPlaylist.kt	m3u
 1	mime	core/src/main/java/tv/own/owntv/core/recording/HlsMediaPlaylist.kt	mpegurl
+3	empty	core/src/main/java/tv/own/owntv/core/recording/RecorderSignInRules.kt	\0
+1	technical	core/src/main/java/tv/own/owntv/core/recording/RecorderSignInRules.kt	$sourceId|$username|$recorderUrl
+1	technical	core/src/main/java/tv/own/owntv/core/recording/RecorderSignInRules.kt	($it)
+1	technical	core/src/main/java/tv/own/owntv/core/recording/RecorderSignInRules.kt	Android TV
+1	json	core/src/main/java/tv/own/owntv/core/recording/RecorderSignInRules.kt	apiKey
+1	json	core/src/main/java/tv/own/owntv/core/recording/RecorderSignInRules.kt	device
+1	protocol	core/src/main/java/tv/own/owntv/core/recording/RecorderSignInRules.kt	dptv_
+1	json	core/src/main/java/tv/own/owntv/core/recording/RecorderSignInRules.kt	dptv_recorder_url
+1	json	core/src/main/java/tv/own/owntv/core/recording/RecorderSignInRules.kt	password
+1	json	core/src/main/java/tv/own/owntv/core/recording/RecorderSignInRules.kt	server_info
+1	json	core/src/main/java/tv/own/owntv/core/recording/RecorderSignInRules.kt	username
 1	technical	core/src/main/java/tv/own/owntv/core/recording/RecordingEngine.kt	$TEMP_PREFIX$id$MUXED_SUFFIX
 1	technical	core/src/main/java/tv/own/owntv/core/recording/RecordingEngine.kt	$TEMP_PREFIX$id-
 1	technical	core/src/main/java/tv/own/owntv/core/recording/RecordingEngine.kt	$TEMP_PREFIX${row.id}-$index$TEMP_SUFFIX
@@ -3350,7 +3361,7 @@
 1	technical	core/src/main/java/tv/own/owntv/core/settings/SettingsImportRules.kt	player_hold_ok
 1	technical	core/src/main/java/tv/own/owntv/core/settings/SettingsImportRules.kt	player_short_ok
 1	technical	core/src/main/java/tv/own/owntv/core/settings/SettingsImportRules.kt	seek_step_sec
-41	empty	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	\0
+44	empty	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	\0
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	$DOWNLOADS_ALLOWED_PREFIX$profileId
 2	log	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	${mode.name}$SEPARATOR$manualDays
 4	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	,
@@ -3572,6 +3583,8 @@
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	record_what_im_watching
 1	json	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	recorder_api_key
 1	json	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	recorder_server_url
+1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	recorder_set_by_hand
+1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	recorder_signed_in_as
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	recording_over_mobile_data
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	recording_post_roll_minutes
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	recording_pre_roll_minutes
@@ -4331,13 +4344,23 @@
 2	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	rev
 5	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	revision
 2	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	src
+1	empty	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	\0
+1	url	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	$advertised/api/auth/dptv
+1	url	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	$advertised/api/sync/status
+1	protocol	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	Authorization
+1	protocol	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	Bearer ${origin.key}
 1	log	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	ProfileSync
 1	protocol	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	dptv_profile
 1	protocol	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	dptv_profile_put
+1	log	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	not signed in
 1	log	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	profile sync failed why=$why: ${e.javaClass.simpleName}
 1	log	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	profile sync why=$why outcome=$outcome
 2	file-path	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	profile-sync
 1	file-path	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	profile.json
+1	log	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	recorder no longer takes this device's key: signing in again
+1	log	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	recorder sign-in code=$code ${if (key != null) "signed in" else "not signed in"}
+1	log	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	recorder sign-in failed: ${e.javaClass.simpleName}
+1	log	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	signed in
 1	technical	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	why
 1	technical	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	work
 4	empty	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	\0

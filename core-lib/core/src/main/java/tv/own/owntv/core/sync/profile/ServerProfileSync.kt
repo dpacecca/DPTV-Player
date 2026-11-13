@@ -29,6 +29,7 @@ import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.model.SourceType
 import tv.own.owntv.core.network.HttpClient
 import tv.own.owntv.core.parser.XtreamClient
+import tv.own.owntv.core.recording.RecorderSignInRules
 import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.core.sync.schedule.SyncStateStore
 
@@ -65,6 +66,13 @@ class ServerProfileSync(
 
     suspend fun sync(why: String): Outcome = mutex.withLock {
         withContext(Dispatchers.IO) {
+            try {
+                signInToRecorder()
+            } catch (c: CancellationException) {
+                throw c
+            } catch (e: Exception) {
+                Log.w(TAG, "recorder sign-in failed: ${e.javaClass.simpleName}")
+            }
             val outcome = try {
                 syncLocked()
             } catch (c: CancellationException) {
@@ -88,6 +96,61 @@ class ServerProfileSync(
         }
         return candidates.firstOrNull { it.id == previous } ?: candidates.minByOrNull { it.id }
     }
+
+    /**
+     * (DPTV v2.9.14) With no recorder set on this TV, sign in to the one DPTV-Server advertises with
+     * the playlist's login, so recording to the server needs no key typed in. A recorder set in
+     * Settings by hand is never touched. A key the recorder stops taking is dropped and replaced.
+     * Runs whether or not profile sync is on; never logs the key, the login or a URL.
+     */
+    private suspend fun signInToRecorder() {
+        val origin = settings.recorderOrigin()
+        if (origin.setByHand) return
+        val pid = settings.activeProfileId.first().takeIf { it >= 0 } ?: return
+        val source = serverSource(pid) ?: return
+        val username = source.username.orEmpty()
+        val password = source.password.orEmpty()
+        if (username.isEmpty() || password.isEmpty()) return
+        val advertised = RecorderSignInRules.advertisedRecorder(http.getText(xtream.actionUrl(source, ""), source.userAgent))
+        val signedInAs = advertised?.let { RecorderSignInRules.signedInAs(it, username, source.id) }
+        when (RecorderSignInRules.step(origin, advertised, signedInAs)) {
+            RecorderSignInRules.Step.KEEP -> return
+            RecorderSignInRules.Step.CHECK -> {
+                val now = System.currentTimeMillis()
+                if (now - lastRecorderCheck < RECORDER_CHECK_EVERY_MS) return
+                lastRecorderCheck = now
+                val code = try {
+                    http.getText("$advertised/api/sync/status", headers = mapOf("Authorization" to "Bearer ${origin.key}"))
+                    200
+                } catch (e: HttpClient.HttpStatusException) {
+                    e.code
+                }
+                if (code != 401) return
+                Log.i(TAG, "recorder no longer takes this device's key: signing in again")
+                settings.clearRecorderSignIn()
+            }
+            RecorderSignInRules.Step.SIGN_IN -> {
+                // A refused or failed sign-in waits an hour, not the next 15-minute check.
+                if (System.currentTimeMillis() - lastSignInFailure < SIGN_IN_RETRY_MS) return
+            }
+        }
+        val identity = settings.deviceIdentity()
+        val (code, answer) = http.postJson(
+            "$advertised/api/auth/dptv",
+            RecorderSignInRules.requestBody(username, password, RecorderSignInRules.deviceName(identity.name, identity.id)),
+        )
+        val key = if (code == 200) RecorderSignInRules.issuedKey(answer) else null
+        Log.i(TAG, "recorder sign-in code=$code ${if (key != null) "signed in" else "not signed in"}")
+        if (key != null && signedInAs != null) {
+            settings.setRecorderSignedIn(advertised!!, key, signedInAs)
+            lastSignInFailure = 0L
+        } else {
+            lastSignInFailure = System.currentTimeMillis()
+        }
+    }
+
+    @Volatile private var lastRecorderCheck = 0L
+    @Volatile private var lastSignInFailure = 0L
 
     private suspend fun syncLocked(): Outcome {
         if (!settings.profileServerSync.first()) return Outcome.OFF
@@ -177,6 +240,8 @@ class ServerProfileSync(
         private const val WORK_DIR = "profile-sync"
         private const val MERGE_FILE = "profile.json"
         private const val WORK_NAME = "profile-sync"
+        private const val RECORDER_CHECK_EVERY_MS = 6 * 60 * 60 * 1000L
+        private const val SIGN_IN_RETRY_MS = 60 * 60 * 1000L
 
         /** Queue a sync (the app opening or going to the background): after any already queued, when online. */
         fun enqueue(context: Context, why: String) {

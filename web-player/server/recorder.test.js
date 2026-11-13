@@ -15,11 +15,16 @@ let app;
 let base;
 let rows;
 let seenRange = null;
+let currentKey = 'dptv_key';
+const signIns = [];
 
 before(async () => {
   xc = http.createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ user_info: { auth: 1, status: 'Active', username: 'damian' } }));
+    const user = new URL(req.url, 'http://x').searchParams.get('username');
+    // The login 'tv' is on a DPTV-Server that advertises its recorder (DPTV-Server 1.0.11).
+    const serverInfo = user === 'tv' ? { dptv_recorder_url: `http://127.0.0.1:${recorder.address().port}/` } : {};
+    res.end(JSON.stringify({ user_info: { auth: 1, status: 'Active', username: user }, server_info: serverInfo }));
   });
   rows = [{ id: 1, channel_id: 7, channel_name: 'Sky Sport 1', program_title: 'Rugby', program_start: 1000, program_stop: 2000, status: 'completed', kind: 'live', filename: 'Rugby.ts' }];
   recorder = http.createServer((req, res) => {
@@ -34,7 +39,18 @@ before(async () => {
       return res.end(FILE);
     }
     res.setHeader('Content-Type', 'application/json');
-    if (req.headers.authorization !== 'Bearer dptv_key') { res.writeHead(401); return res.end('{"error":"Not signed in"}'); }
+    if (url.pathname === '/api/auth/dptv' && req.method === 'POST') {
+      let raw = '';
+      req.on('data', (d) => { raw += d; });
+      req.on('end', () => {
+        const b = JSON.parse(raw);
+        signIns.push(b.device);
+        if (b.username !== 'tv' || b.password !== 'pw') { res.writeHead(401); return res.end('{"error":"no"}'); }
+        res.end(JSON.stringify({ apiKey: currentKey, username: 'tv' }));
+      });
+      return;
+    }
+    if (req.headers.authorization !== `Bearer ${currentKey}`) { res.writeHead(401); return res.end('{"error":"Not signed in"}'); }
     let body = '';
     req.on('data', (d) => { body += d; });
     req.on('end', () => {
@@ -121,4 +137,34 @@ test('dvr: set up, list, record, play with ranges, delete', async () => {
 
 test('dvr without a session says 401', async () => {
   assert.equal((await fetch(`${base}/api/dvr/recordings`)).status, 401);
+});
+
+test('dvr: a DPTV-Server login signs itself in to the recorder its server advertises', async () => {
+  const signIn = await fetch(`${base}/api/login`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ server: `127.0.0.1:${xc.address().port}`, username: 'tv', password: 'pw' }),
+  });
+  const cookie = signIn.headers.get('set-cookie').split(';')[0];
+  const call = (p, init = {}) => fetch(`${base}${p}`, { ...init, headers: { cookie, 'Content-Type': 'application/json', ...(init.headers || {}) } });
+
+  const cfg = await (await call('/api/dvr/config')).json();
+  assert.equal(cfg.configured, true);
+  assert.equal(cfg.source, 'dptv');
+  assert.equal(cfg.url, `http://127.0.0.1:${recorder.address().port}`);
+  assert.ok(!JSON.stringify(cfg).includes('dptv_key'), 'the key never goes back to the browser');
+  assert.deepEqual(signIns, ['DPTV Web']);
+  assert.ok(Array.isArray(await (await call('/api/dvr/recordings')).json()));
+  assert.equal(signIns.length, 1, 'the key is kept, not asked for on every call');
+
+  // The recorder withdrew the key (the login was disabled there, then enabled again): signed in afresh.
+  currentKey = 'dptv_key2';
+  assert.equal((await call('/api/dvr/recordings')).status, 200);
+  assert.equal(signIns.length, 2);
+
+  // Remove keeps it off for this login.
+  const cleared = await (await call('/api/dvr/config', { method: 'DELETE' })).json();
+  assert.equal(cleared.configured, false);
+  assert.equal((await (await call('/api/dvr/config')).json()).configured, false);
+  assert.equal(signIns.length, 2);
+  currentKey = 'dptv_key';
 });

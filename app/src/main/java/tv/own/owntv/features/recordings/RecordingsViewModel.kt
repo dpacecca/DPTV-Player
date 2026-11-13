@@ -164,6 +164,8 @@ class RecordingsViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     val recorderApiKey: StateFlow<String> = settings.recorderApiKey
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+    val recorderSignedInByServer: StateFlow<Boolean> = settings.recorderSignedInByServer
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     fun setRecorderServerUrl(url: String) {
         _serverTest.value = null
