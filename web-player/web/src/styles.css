@@ -129,7 +129,13 @@ nav { display: flex; gap: 4px; flex: none; }
 .progress span { display: block; height: 100%; background: var(--text); border-radius: 3px; }
 .info-channel { display: flex; align-items: center; gap: 10px; font-weight: 700; min-width: 0; }
 .info-channel-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.desc { margin: 0; color: var(--body); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+/* Everything in the panel keeps its size; the description takes what room is left and scrolls when it doesn't fit. */
+.info > * { flex: none; }
+.desc {
+  margin: 0; color: var(--body); line-height: 1.45;
+  flex: 0 1 auto; min-height: 1.45em; overflow-y: auto; overscroll-behavior: contain; padding-right: 6px;
+  scrollbar-width: thin; scrollbar-color: var(--line) transparent;
+}
 .info-next { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
 .info-error { color: var(--danger); font-size: 13px; }
@@ -243,7 +249,7 @@ nav { display: flex; gap: 4px; flex: none; }
   .top { flex: none; }
   .top-player { width: 100%; height: auto; max-width: none; }
   .info-title { font-size: 26px; }
-  .desc { -webkit-line-clamp: 2; }
+  .desc { max-height: calc(1.45em * 4); }
   .toolbar { padding: 8px 10px; }
   .cat-toggle { max-width: 150px; }
   .toolbar { flex-wrap: wrap; }
