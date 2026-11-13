@@ -313,7 +313,6 @@ function InfoBlock({ channel, programme, next, now, playingId, favourite, onFavo
   return (
     <div className="info">
       <div className="tags">
-        {live && <span className="tag live">LIVE</span>}
         {recording?.status === 'recording' && <span className="tag outline red"><span className="dot" />RECORDING</span>}
         {recording?.status === 'scheduled' && <span className="tag outline amber">SCHEDULED</span>}
         {recording?.status === 'completed' && <span className="tag outline green">RECORDED</span>}
