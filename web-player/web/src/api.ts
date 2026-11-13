@@ -53,6 +53,9 @@ export const api = {
   categories: () => call<Category[]>('/live/categories'),
   channels: () => call<Channel[]>('/live/channels'),
   guide: (from: number, to: number, ids: string[]) => call<Guide>('/guide', json('POST', { from, to, ids })),
+  /** EPG ids with a programme titled like [q] in [from, to). */
+  guideSearch: (q: string, from: number, to: number) =>
+    call<{ ids: string[] }>(`/guide/search?q=${encodeURIComponent(q)}&from=${from}&to=${to}`),
   streamUrl: (id: string) => absolute(`/api/live/${encodeURIComponent(id)}/stream`),
 
   dvrConfig: () => call<RecorderConfig>('/dvr/config'),
