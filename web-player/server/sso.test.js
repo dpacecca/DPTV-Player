@@ -12,13 +12,11 @@ const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
 let issuerUrl;
 let lastNonce = null;
 let subject = 'user-1';
-let preferred = 'damian';
-const LINK_KEY = 'k'.repeat(32);
 
 function idToken(nonce) {
   const now = Math.floor(Date.now() / 1000);
   const head = b64({ alg: 'RS256', kid: 'k1', typ: 'JWT' });
-  const body = b64({ iss: issuerUrl, aud: 'dptv-web', sub: subject, preferred_username: preferred, iat: now, exp: now + 300, nonce });
+  const body = b64({ iss: issuerUrl, aud: 'dptv-web', sub: subject, preferred_username: 'damian', iat: now, exp: now + 300, nonce });
   const sig = crypto.sign('RSA-SHA256', Buffer.from(`${head}.${body}`), privateKey).toString('base64url');
   return `${head}.${body}.${sig}`;
 }
@@ -48,12 +46,6 @@ const idp = http.createServer((req, res) => {
 const xc = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   res.setHeader('Content-Type', 'application/json');
-  // DPTV-Server's lookup by username (1.0.13), behind the shared key.
-  if (url.pathname === '/api/integrations/xc-login') {
-    if (req.headers.authorization !== `Bearer ${LINK_KEY}`) { res.writeHead(401); return res.end('{}'); }
-    if (url.searchParams.get('username') !== 'damian') { res.writeHead(404); return res.end('{}'); }
-    return res.end(JSON.stringify({ username: 'damian', password: 'pw' }));
-  }
   const ok = url.searchParams.get('username') === 'damian' && url.searchParams.get('password') === 'pw';
   if (url.pathname === '/player_api.php' && !url.searchParams.get('action')) {
     return res.end(JSON.stringify(ok ? { user_info: { auth: 1, status: 'Active', username: 'damian' } } : { user_info: { auth: 0 } }));
@@ -152,33 +144,4 @@ test('a different person is asked for their own login', async () => {
   const r = await browse(`${base}/api/auth/login`);
   assert.equal(new URL(r.url).search, '?sso_link=1');
   subject = 'user-1';
-});
-
-test('with DPTV-Server sharing its key, a person goes straight in with the login of their username', async () => {
-  process.env.DPTV_SERVER_LINK_KEY = LINK_KEY;
-  try {
-    subject = 'user-2';
-    const first = await browse(`${base}/api/auth/login`);
-    assert.equal(new URL(first.url).search, '', 'nothing to type');
-    assert.ok(first.jar.get('dptv_session'));
-    const cats = await fetch(`${base}/api/live/categories`, { headers: { cookie: `dptv_session=${first.jar.get('dptv_session')}` } });
-    assert.deepEqual(await cats.json(), [{ id: '1', name: 'Sport' }]);
-
-    // Someone with no login of their username on DPTV-Server is still asked once.
-    subject = 'user-3';
-    preferred = 'someone-else';
-    const other = await browse(`${base}/api/auth/login`);
-    assert.equal(new URL(other.url).search, '?sso_link=1');
-
-    // A wrong key matches nobody.
-    process.env.DPTV_SERVER_LINK_KEY = 'x'.repeat(32);
-    subject = 'user-4';
-    preferred = 'damian';
-    const wrong = await browse(`${base}/api/auth/login`);
-    assert.equal(new URL(wrong.url).search, '?sso_link=1');
-  } finally {
-    delete process.env.DPTV_SERVER_LINK_KEY;
-    subject = 'user-1';
-    preferred = 'damian';
-  }
 });

@@ -9,9 +9,8 @@ const PENDING_COOKIE = 'dptv_sso_pending';
 
 /**
  * Single sign-on with an OpenID Connect provider (Authentik): the authorisation-code flow with PKCE. Once
- * the provider vouches for someone, they use, in order: the DPTV-Server login linked to them; the one of
- * the same username, when DPTV-Server shares DPTV_SERVER_LINK_KEY (2.9.15); SSO_XC_USERNAME's when set;
- * else the page asks them once.
+ * the provider vouches for someone, they use the DPTV-Server login linked to them (asked for once), or
+ * SSO_XC_USERNAME's when one is set.
  */
 export function ssoRouter(sessions, links) {
   const router = express.Router();
@@ -39,32 +38,6 @@ export function ssoRouter(sessions, links) {
   const sharedLogin = () => (config.oidc.sharedUsername && config.serverUrl
     ? { server: config.serverUrl, username: config.oidc.sharedUsername, password: config.oidc.sharedPassword }
     : null);
-
-  /**
-   * (2.9.15) The DPTV-Server login with this person's username, checked; null when there is none, DPTV-Server
-   * isn't sharing (no key) or can't be reached. Never logs the password.
-   */
-  async function matchedLogin(username) {
-    const key = config.oidc.serverLinkKey;
-    const server = normalizeServer(config.serverUrl || '');
-    if (!key || !server || !username) return null;
-    try {
-      const res = await fetch(`${server}/api/integrations/xc-login?username=${encodeURIComponent(username)}`, {
-        headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' },
-        signal: AbortSignal.timeout(10_000),
-      });
-      if (res.status === 401) console.warn('[sso] DPTV-Server did not accept DPTV_SERVER_LINK_KEY');
-      if (!res.ok) return null;
-      const found = await res.json();
-      if (!found?.username || !found?.password) return null;
-      const login = { server, username: String(found.username), password: String(found.password) };
-      await signIn(login);
-      return login;
-    } catch (err) {
-      console.warn(`[sso] no DPTV-Server login matched (${err instanceof XcError ? err.status : err.name})`);
-      return null;
-    }
-  }
 
   /** Step 1: off to the provider, with a sealed note of what to check on the way back. */
   router.get('/login', async (req, res) => {
@@ -103,10 +76,7 @@ export function ssoRouter(sessions, links) {
         sub: String(claims.sub),
         name: claims.preferred_username || claims.name || claims.email || String(claims.sub),
       };
-      // A match is looked up at every sign-in, not kept, so a password changed on DPTV-Server follows.
-      const login = links.get(person.sub)
-        || await matchedLogin(claims.preferred_username ? String(claims.preferred_username) : '')
-        || sharedLogin();
+      const login = links.get(person.sub) || sharedLogin();
       if (login) {
         sessions.start(res, { ...login, sso: person });
         return res.redirect('/');

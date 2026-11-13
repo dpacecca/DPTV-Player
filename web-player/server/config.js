@@ -43,11 +43,6 @@ export const config = {
     /** Optional: one DPTV-Server login every signed-in person uses until they link their own. */
     sharedUsername: (process.env.SSO_XC_USERNAME || '').trim(),
     sharedPassword: process.env.SSO_XC_PASSWORD || '',
-    /**
-     * (2.9.15) Shared with DPTV-Server (Settings > Integrations > "DPTV Web link key"): DPTV Web then signs a
-     * person in with the DPTV-Server login of the same username, with nothing to type. Read on use.
-     */
-    get serverLinkKey() { return (process.env.DPTV_SERVER_LINK_KEY || '').trim(); },
   },
 };
 
