@@ -61,6 +61,14 @@ key in `/data/sso-links.json`); after that, Authentik alone signs them in. **Cha
 forgets the link. To skip the question for everyone, set `SSO_XC_USERNAME` / `SSO_XC_PASSWORD` to one XC
 login they all use.
 
+**No question at all, a login per person (2.9.15):** give DPTV-Server and DPTV Web the same long random key
+(24 characters or more): in DPTV-Server, **Settings → Integrations → DPTV Web link key** (DPTV-Server 1.0.13
+or later); on DPTV Web, `DPTV_SERVER_LINK_KEY`. After Authentik, DPTV Web then signs each person in with
+the DPTV-Server XC login of the same username as their Authentik username (ignoring case), looked up
+afresh at every sign-in, so a changed password follows. Someone with no such login is asked once, as above;
+one already linked keeps their link. Anyone holding the key can read XC logins from DPTV-Server, so keep it
+secret.
+
 ## Limits of this first version
 
 - **Browsers**: Chrome, Edge and Firefox. **Not Safari / iPhone** (no MPEG-TS playback there).
@@ -102,6 +110,7 @@ See `docker-compose.yml`.
 | `OIDC_REDIRECT_URI` | `PUBLIC_URL/api/auth/callback` | Only if it must differ. |
 | `OIDC_SCOPES` | `openid profile email` | |
 | `OIDC_BUTTON_LABEL` | `Sign in with Authentik` | |
+| `DPTV_SERVER_LINK_KEY` | | The key also set in DPTV-Server's Settings → Integrations → DPTV Web link key: SSO users go straight in with the XC login of their own username. |
 | `SSO_XC_USERNAME` / `SSO_XC_PASSWORD` | | One XC login every SSO user uses until they link their own. |
 | `RECORDER_URL` | | DPTV-Recorder for the DVR, e.g. `http://192.168.1.10:3000`. Each login can also set its own. |
 | `RECORDER_API_KEY` | | An API key from DPTV-Recorder (Settings → Account → API keys). |
