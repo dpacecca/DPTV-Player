@@ -8,7 +8,7 @@ import org.junit.Test
 /** (DPTV v2.9.19) A league's board between rounds: ESPN's current day plus the months ahead. */
 class BoardRulesTest {
     private fun fx(id: String, dateMs: Long, state: FixtureState = FixtureState.UPCOMING) =
-        Fixture(id = id, leagueId = "rugby.17567", dateMs = dateMs, state = state, statusLine = "")
+        Fixture(id = id, leagueId = "rugby.17567", dateMs = dateMs, state = state, statusLine = "", broadcasts = emptyList(), venue = null)
 
     private val now = 1_000_000L
 
