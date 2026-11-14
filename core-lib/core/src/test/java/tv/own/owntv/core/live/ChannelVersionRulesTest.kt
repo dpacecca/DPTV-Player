@@ -66,4 +66,14 @@ class ChannelVersionRulesTest {
     fun `the search uses the name's own words, not its quality marks`() {
         assertEquals(listOf("dazn", "laliga"), ChannelVersionRules.searchWords(f("ES| DAZN LaLiga FHD")))
     }
+
+    @Test
+    fun `one stream in two playlists is one version, the one playing kept`() {
+        fun v(id: Long, source: Long, url: String) = ChannelVersion(
+            channel = ChannelEntity(id = id, sourceId = source, name = "Sky Sports F1", streamUrl = url),
+            name = "Sky Sports F1", tags = emptyList(), qualityRank = 0, categoryName = null, playlistName = "P$source",
+        )
+        val ordered = listOf(v(1, 1, "http://a/1.ts"), v(2, 2, "http://a/1.ts"), v(3, 2, "http://b/9.ts"), v(4, 3, " http://b/9.ts"))
+        assertEquals(listOf(1L, 3L), ChannelVersionRules.oncePerStream(ordered).map { it.channel.id })
+    }
 }

@@ -22,7 +22,7 @@ class SportsApi(
     private val gate = SofaScoreGate()
 
     suspend fun scoreboard(league: SportLeague): EspnApi.Scoreboard = when (league.source) {
-        LeagueSource.ESPN -> espn.scoreboard(league)
+        LeagueSource.ESPN -> espnBoard(league)
         LeagueSource.SOFASCORE -> SourceChain.scoreboard(
             league, gate, ::sportLog,
             primary = { sofaScore.scoreboard(it) },
@@ -37,6 +37,24 @@ class SportsApi(
     suspend fun month(league: SportLeague, month: java.time.YearMonth): EspnApi.Scoreboard = when {
         league.source == LeagueSource.ESPN && league.espnSport != CricketSport -> espn.scoreboard(league, month = month)
         else -> scoreboard(league)
+    }
+
+    /**
+     * (DPTV v2.9.19) An ESPN league's board. ESPN's "current" scoreboard is one match day: for a
+     * competition between rounds (rugby's Nations Championship, a league over an international break)
+     * it holds only games already played, and nothing to come showed. When it has nothing after today,
+     * this month and next are read too (ESPN answers a month at once) and joined to it.
+     */
+    private suspend fun espnBoard(league: SportLeague): EspnApi.Scoreboard {
+        val current = espn.scoreboard(league)
+        if (league.espnSport == CricketSport) return current
+        val now = System.currentTimeMillis()
+        if (!BoardRules.needsMonths(current.fixtures, now)) return current
+        val thisMonth = java.time.YearMonth.now()
+        val months = listOf(thisMonth, thisMonth.plusMonths(1)).mapNotNull { m ->
+            runCatching { espn.scoreboard(league, month = m) }.getOrNull()
+        }
+        return current.copy(fixtures = BoardRules.join(current.fixtures, months.flatMap { it.fixtures }))
     }
 
     /** Tables come from SofaScore only (TheSportsDB's free key has none): none while it rests. */
@@ -146,4 +164,14 @@ internal object SourceChain {
     private const val NoFallback = "; no fallback, unavailable for 6 h"
     private const val NoSource = "no source for "
     private const val Colon = ": "
+}
+
+/** (DPTV v2.9.19) When a league's board needs more than ESPN's current day, and how the parts join. */
+internal object BoardRules {
+    /** Nothing scheduled after [nowMs] on the board: the next games are on later days ESPN didn't send. */
+    fun needsMonths(fixtures: List<Fixture>, nowMs: Long): Boolean = fixtures.none { it.dateMs > nowMs }
+
+    /** [current] then [more], one per fixture id (the current board's copy kept: it is the freshest), by start. */
+    fun join(current: List<Fixture>, more: List<Fixture>): List<Fixture> =
+        (current + more).distinctBy { it.id }.sortedBy { it.dateMs }
 }
