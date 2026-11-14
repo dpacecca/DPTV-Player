@@ -1636,6 +1636,8 @@ class LiveViewModel(
      * app immediately and the delayed write would have nothing to protect against anyway).
      */
     private fun recordLiveHistory(channel: ChannelEntity, immediate: Boolean = false) {
+        // (DPTV v2.9.18) Another version of the channel being watched: the channel's own entry stands.
+        if (tv.own.owntv.core.live.ServerVersionRules.isSynthetic(channel.id)) return
         historyJob?.cancel()
         historyJob = viewModelScope.launch {
             if (!immediate) delay(HISTORY_DEBOUNCE_MS)
