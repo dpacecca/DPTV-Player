@@ -365,8 +365,6 @@ private fun LineupRow(home: LineupPlayer?, away: LineupPlayer?) {
                     Text(p.number?.toString().orEmpty(), style = stageText(16, 800), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, modifier = Modifier.width(30.mpx))
                     Text(p.name, style = stageText(17, 600), color = if (focused) StageColors.Text else StageColors.Body, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                     if (p.captain) StageTag(stringResource(R.string.sport_lineups_captain))
-                    Spacer(Modifier.weight(1f))
-                    p.position?.let { Text(it, style = stageText(14, 500), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                 }
             }
         }
