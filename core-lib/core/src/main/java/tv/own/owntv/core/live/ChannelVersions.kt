@@ -68,6 +68,14 @@ object ChannelVersionRules {
                 .thenBy { it.channel.sortOrder },
         )
 
+    /**
+     * (DPTV v2.9.19) One entry per stream: copies of a channel with the same stream address (one stream
+     * in two playlists) are one version, and the first in [versions] (already ordered, the one playing
+     * first) stands for them, so a stall never moves to the same broken stream under another name.
+     */
+    fun oncePerStream(versions: List<ChannelVersion>): List<ChannelVersion> =
+        versions.distinctBy { it.channel.streamUrl.trim() }
+
     /** The words a full-text search for [facets] needs: the name's own words its key kept. */
     fun searchWords(facets: ChannelFacets): List<String> {
         val keyWords = facets.portableKey.split(' ').toSet()
@@ -143,7 +151,7 @@ class ChannelVersions(
                     playlistName = playlistNames[ch.sourceId],
                 )
             }
-        val ordered = ChannelVersionRules.ordered(versions, ids, channel.id)
+        val ordered = ChannelVersionRules.oncePerStream(ChannelVersionRules.ordered(versions, ids, channel.id))
         synchronized(cache) { cache[channel.id] = Cached(fingerprint, ordered) }
         ordered
     }
