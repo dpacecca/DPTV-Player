@@ -17,11 +17,21 @@ class SportsApi(
     private val espn: EspnApi,
     private val sofaScore: SofaScoreApi,
     private val sportsDb: TheSportsDbApi,
+    private val worldRugby: WorldRugbyApi,
+    context: android.content.Context,
 ) {
 
+    private val appContext = context.applicationContext
     private val gate = SofaScoreGate()
 
-    suspend fun scoreboard(league: SportLeague): EspnApi.Scoreboard = when (league.source) {
+    suspend fun scoreboard(league: SportLeague): EspnApi.Scoreboard {
+        if (league.worldRugby.isNotEmpty()) worldRugbyBoard(league, null)?.let { return it }
+        return sourceBoard(league)
+    }
+
+    /** The league's board from its own source, when World Rugby has not served it. */
+    private suspend fun sourceBoard(league: SportLeague): EspnApi.Scoreboard = when (league.source) {
+        LeagueSource.WORLD_RUGBY -> throw SourceUnavailableException(NoSource + league.id)
         LeagueSource.ESPN -> espnBoard(league)
         LeagueSource.SOFASCORE -> SourceChain.scoreboard(
             league, gate, ::sportLog,
@@ -34,10 +44,87 @@ class SportsApi(
      * One month of a league's games (v2.6.2, the calendar). ESPN answers a month at once; cricket (no
      * month feed) and the SofaScore leagues give what their board holds, which the calendar files by day.
      */
-    suspend fun month(league: SportLeague, month: java.time.YearMonth): EspnApi.Scoreboard = when {
-        league.source == LeagueSource.ESPN && league.espnSport != CricketSport -> espn.scoreboard(league, month = month)
-        else -> scoreboard(league)
+    suspend fun month(league: SportLeague, month: java.time.YearMonth): EspnApi.Scoreboard {
+        if (league.worldRugby.isNotEmpty()) worldRugbyBoard(league, month)?.let { return it }
+        return when {
+            league.source == LeagueSource.ESPN && league.espnSport != CricketSport -> espn.scoreboard(league, month = month)
+            else -> sourceBoard(league)
+        }
     }
+
+    /**
+     * (DPTV v2.9.20) A rugby league's board from World Rugby, the preferred source: its fixtures and
+     * scores, with ESPN's games laid over them for crests, broadcasters and ids
+     * ([WorldRugbyRules.merge]). Null when World Rugby has no season of it or cannot be reached, so the
+     * league's own source serves it as before.
+     */
+    private suspend fun worldRugbyBoard(league: SportLeague, month: java.time.YearMonth?): EspnApi.Scoreboard? {
+        val fetched: List<Fixture>? = try {
+            if (month == null) worldRugby.fixtures(league) else worldRugby.month(league, month)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            sportLog(WorldRugbyFailed + league.id + Colon + e.message)
+            null
+        }
+        val fixtures = fetched ?: return null
+        if (fixtures.isEmpty() && month == null) return null
+        val merged = WorldRugbyRules.merge(fixtures, espnSide(league, month), crests(league))
+        if (month == null) boardSides[league.id] = merged
+        return EspnApi.Scoreboard(appContext.getString(league.labelRes), merged)
+    }
+
+    /** ESPN's games to lay over World Rugby's: the current day, this month and next (or [month]). */
+    private suspend fun espnSide(league: SportLeague, month: java.time.YearMonth?): List<Fixture> {
+        if (league.source != LeagueSource.ESPN) return emptyList()
+        val key = league.id + Colon + (month?.toString() ?: "")
+        val now = System.currentTimeMillis()
+        espnSides[key]?.takeIf { now - it.first < EspnSideMs }?.let { return it.second }
+        val thisMonth = java.time.YearMonth.now()
+        val boards = if (month != null) {
+            listOf(runCatching { espn.scoreboard(league, month = month) }.getOrNull())
+        } else {
+            listOf(
+                runCatching { espn.scoreboard(league) }.getOrNull(),
+                runCatching { espn.scoreboard(league, month = thisMonth) }.getOrNull(),
+                runCatching { espn.scoreboard(league, month = thisMonth.plusMonths(1)) }.getOrNull(),
+            )
+        }
+        val fixtures = boards.filterNotNull().flatMap { it.fixtures }.distinctBy { it.id }
+        // A failed fetch is tried again on the next refresh rather than kept for ten minutes.
+        if (boards.any { it != null }) espnSides[key] = now to fixtures
+        return fixtures
+    }
+
+    /**
+     * ESPN's rugby teams to take crests from: the league's own and the national sides of the World
+     * Cups and test windows, which cover the internationals only World Rugby lists (the Nations Cup).
+     */
+    private suspend fun crests(league: SportLeague): List<TeamRef> {
+        val now = System.currentTimeMillis()
+        val national = crestCache[NationalKey]?.takeIf { now - it.first < CrestCacheMs }?.second
+            ?: CrestLeagues.mapNotNull { sportsLeagueById(it) }
+                .flatMap { runCatching { espn.teams(it) }.getOrDefault(emptyList()) }
+                .also { if (it.isNotEmpty()) crestCache[NationalKey] = now to it }
+        val own = if (league.source != LeagueSource.ESPN) {
+            emptyList()
+        } else {
+            crestCache[league.id]?.takeIf { now - it.first < CrestCacheMs }?.second
+                ?: runCatching { espn.teams(league) }.getOrDefault(emptyList())
+                    .also { if (it.isNotEmpty()) crestCache[league.id] = now to it }
+        }
+        return own + national
+    }
+
+    /** A World Rugby match's team sheets (DPTV v2.9.20); null for a game World Rugby does not list. */
+    suspend fun lineups(fixture: Fixture): Lineups? {
+        val id = fixture.worldRugbyMatchId ?: return null
+        return worldRugby.lineups(id)
+    }
+
+    private val espnSides = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, List<Fixture>>>()
+    private val crestCache = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, List<TeamRef>>>()
+    private val boardSides = java.util.concurrent.ConcurrentHashMap<String, List<Fixture>>()
 
     /**
      * (DPTV v2.9.19) An ESPN league's board. ESPN's "current" scoreboard is one match day: for a
@@ -57,8 +144,27 @@ class SportsApi(
         return current.copy(fixtures = BoardRules.join(current.fixtures, months.flatMap { it.fixtures }))
     }
 
-    /** Tables come from SofaScore only (TheSportsDB's free key has none): none while it rests. */
-    suspend fun standings(league: SportLeague): List<LeagueTable> = when (league.source) {
+    /**
+     * A rugby league's tables come from World Rugby first (DPTV v2.9.20), with the board's crests.
+     * Tables come from SofaScore only (TheSportsDB's free key has none): none while it rests.
+     */
+    suspend fun standings(league: SportLeague): List<LeagueTable> {
+        if (league.worldRugby.isNotEmpty()) {
+            val tables = try {
+                worldRugby.standings(league)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                sportLog(WorldRugbyFailed + league.id + Colon + e.message)
+                emptyList()
+            }
+            if (tables.isNotEmpty()) return WorldRugbyRules.adoptRows(tables, boardSides[league.id].orEmpty(), crests(league))
+        }
+        return sourceStandings(league)
+    }
+
+    private suspend fun sourceStandings(league: SportLeague): List<LeagueTable> = when (league.source) {
+        LeagueSource.WORLD_RUGBY -> emptyList()
         LeagueSource.ESPN -> espn.standings(league)
         LeagueSource.SOFASCORE -> if (!gate.open()) {
             emptyList()
@@ -77,7 +183,7 @@ class SportsApi(
 
     suspend fun teams(league: SportLeague): List<TeamRef> = when (league.source) {
         LeagueSource.ESPN -> espn.teams(league)
-        LeagueSource.SOFASCORE -> scoreboard(league).fixtures.flatMap { listOfNotNull(it.home, it.away) }
+        LeagueSource.SOFASCORE, LeagueSource.WORLD_RUGBY -> scoreboard(league).fixtures.flatMap { listOfNotNull(it.home, it.away) }
             .distinctBy { it.id }
             .map { TeamRef(it.id, it.abbreviation, it.name, it.logoUrl) }
             .sortedBy { it.name.lowercase() }
@@ -86,7 +192,15 @@ class SportsApi(
     private companion object {
         const val CricketSport = "cricket"
         const val SofaScoreFailed = "sofascore standings failed "
+        const val WorldRugbyFailed = "world rugby failed "
+        const val NoSource = "no source for "
         const val Colon = ": "
+        const val NationalKey = "national"
+        const val EspnSideMs = 10L * 60L * 1000L
+        const val CrestCacheMs = 24L * 60L * 60L * 1000L
+
+        /** ESPN's competitions of national sides: World Cups, test windows, Six Nations, Championship. */
+        val CrestLeagues = listOf("rugby.164205", "rugby.289234", "rugby.17567", "rugby.180659", "rugby.244293", "rugby.289237")
 
         /** A source failure, to logcat and to the Playback log page ("sport:" lines). */
         fun sportLog(message: String) {

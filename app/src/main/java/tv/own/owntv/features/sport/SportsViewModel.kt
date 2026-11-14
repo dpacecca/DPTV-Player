@@ -53,6 +53,14 @@ class SportsViewModel(
         data object Error : BoardState
     }
 
+    /** (DPTV v2.9.20) The open match's team sheets: none for a game World Rugby does not list. */
+    sealed interface LineupState {
+        data object None : LineupState
+        data object Loading : LineupState
+        data class Content(val lineups: Lineups) : LineupState
+        data object Failed : LineupState
+    }
+
     sealed interface MatchesState {
         data object Idle : MatchesState
         data object Loading : MatchesState
@@ -165,6 +173,9 @@ class SportsViewModel(
 
     private val _matches = MutableStateFlow<MatchesState>(MatchesState.Idle)
     val matches: StateFlow<MatchesState> = _matches.asStateFlow()
+
+    private val _lineups = MutableStateFlow<LineupState>(LineupState.None)
+    val lineups: StateFlow<LineupState> = _lineups.asStateFlow()
 
     private val _standings = MutableStateFlow<List<LeagueTable>>(emptyList())
     val standings: StateFlow<List<LeagueTable>> = _standings.asStateFlow()
@@ -607,6 +618,7 @@ class SportsViewModel(
     /** Open (or with null close) a match page; its channels are matched and its table loaded. */
     fun selectFixture(fixture: Fixture?) {
         _selectedFixture.value = fixture
+        loadLineups(fixture)
         if (fixture == null) {
             _matches.value = MatchesState.Idle
             return
@@ -826,14 +838,14 @@ class SportsViewModel(
         if (!(quiet && hadContent)) boards.value = boards.value + (league.id to BoardState.Loading)
         val result = runCatching { api.scoreboard(league) }
         // The source chain already logged its line (v2.6.0).
-        result.onFailure { if (league.source == LeagueSource.ESPN) android.util.Log.w("SportsHub", "board failed " + league.id, it) }
+        result.onFailure { if (league.source == LeagueSource.ESPN && league.worldRugby.isEmpty()) android.util.Log.w("SportsHub", "board failed " + league.id, it) }
         result.onSuccess { android.util.Log.d("SportsHub", "board ok " + league.id + " fixtures=" + it.fixtures.size) }
         boardAt[league.id] = now
         if (result.isFailure && quiet && hadContent) return
         // A SofaScore league no source could serve says so rather than an error, and is fetched
         // again by the next refresh once its board is stale (v2.5.0; "unavailable" v2.6.0).
         val board = result.getOrNull()
-            ?: if (league.source == LeagueSource.SOFASCORE) EspnApi.Scoreboard(league.id, emptyList(), unavailable = true) else null
+            ?: if (league.source != LeagueSource.ESPN) EspnApi.Scoreboard(league.id, emptyList(), unavailable = true) else null
         // A league dropped from the selection while fetching must not come back (the open league
         // page's own board, v2.6.0, stays).
         if (league.id !in loadingLeagues.value && !(extra || league.id == _openLeagueId.value)) return
@@ -857,6 +869,23 @@ class SportsViewModel(
             if (key in followed && names[key] != team.name) key to team.name else null
         }.toMap()
         if (found.isNotEmpty()) runCatching { prefs.putTeamNames(found) }
+    }
+
+    /** (DPTV v2.9.20) The team sheets of [fixture], when World Rugby lists the game. */
+    private fun loadLineups(fixture: Fixture?) {
+        if (fixture?.worldRugbyMatchId == null) {
+            _lineups.value = LineupState.None
+            return
+        }
+        _lineups.value = LineupState.Loading
+        viewModelScope.launch {
+            val result = runCatching { api.lineups(fixture) }.getOrNull()
+            if (_selectedFixture.value?.id != fixture.id) return@launch
+            _lineups.value = when {
+                result == null -> LineupState.Failed
+                else -> LineupState.Content(result)
+            }
+        }
     }
 
     private suspend fun loadStandings(league: SportLeague) {

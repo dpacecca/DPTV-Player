@@ -31,8 +31,10 @@ enum class LeagueKind { TEAMS, EVENT }
  * Where a league's fixtures, live scores and standings come from (v2.5.0). ESPN serves everything it
  * covers; SofaScore fills in only the competitions ESPN lacks (rugby sevens and rugby league events),
  * mapped by [SofaScoreApi] into the same models, so the rest of Sport never asks which one it is.
+ * (DPTV v2.9.20) [WORLD_RUGBY]: a rugby competition only World Rugby's feed carries (the Nations Cup).
+ * Rugby leagues on ESPN with [SportLeague.worldRugby] names also come from World Rugby first.
  */
-enum class LeagueSource { ESPN, SOFASCORE }
+enum class LeagueSource { ESPN, SOFASCORE, WORLD_RUGBY }
 
 data class SportLeague(
     /** Stable id, also the follow key (e.g. "soccer.ger.1"). */
@@ -63,6 +65,14 @@ data class SportLeague(
      * while SofaScore refuses ([SportsApi]); null where TheSportsDB has no such league (the sevens).
      */
     val theSportsDbId: String? = null,
+    /**
+     * (DPTV v2.9.20) The competition's names in World Rugby's feed, without the season ("Six Nations",
+     * "URC"), the preferred source for rugby: fixtures, scores, tables and line-ups come from there, with
+     * ESPN laid over them for crests, broadcasters and ids ([SportsApi]). Empty = not on World Rugby.
+     */
+    val worldRugby: List<String> = emptyList(),
+    /** World Rugby's sport code for [worldRugby]: "mru" men's fifteens, "wru" women's. */
+    val worldRugbySport: String = WorldRugbyMen,
 ) {
     /** Derived from the ESPN sport slug, so a new league lands in its sport's group by itself. */
     val sportGroup: SportGroup
@@ -84,6 +94,10 @@ data class SportLeague(
             else -> SportGroup.OTHER
         }
 }
+
+/** World Rugby's sport codes ([SportLeague.worldRugbySport]). */
+const val WorldRugbyMen = "mru"
+const val WorldRugbyWomen = "wru"
 
 data class SportTeam(
     val id: String,
@@ -161,7 +175,34 @@ data class Fixture(
     val roundNumber: Int? = null,
     /** A group letter or name (TheSportsDB, v2.6.0); shown as a translated "Group A" label. */
     val group: String? = null,
+    /** (DPTV v2.9.20) World Rugby's id for the match, where its line-ups come from; null elsewhere. */
+    val worldRugbyMatchId: String? = null,
 )
+
+/** (DPTV v2.9.20) One player on a team sheet. */
+data class LineupPlayer(
+    /** Shirt number; 1–15 start, 16 up are replacements. */
+    val number: Int?,
+    val name: String,
+    /** The position as the source names it ("Fly Half"); null for a replacement. */
+    val position: String?,
+    val captain: Boolean = false,
+    /** Test caps (for a club, appearances) as the source counts them; null when not given. */
+    val caps: Int? = null,
+)
+
+/** (DPTV v2.9.20) One side's team sheet: starters, replacements and the head coach. */
+data class TeamLineup(
+    val starters: List<LineupPlayer>,
+    val replacements: List<LineupPlayer>,
+    val coach: String? = null,
+)
+
+/** (DPTV v2.9.20) A match's team sheets, home then away. */
+data class Lineups(val home: TeamLineup, val away: TeamLineup) {
+    /** Either side has named a team. */
+    val announced: Boolean get() = home.starters.isNotEmpty() || away.starters.isNotEmpty()
+}
 
 data class StandingRow(
     val rank: String,
