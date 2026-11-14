@@ -1199,16 +1199,25 @@
 1	regex	app/src/main/java/tv/own/owntv/features/sport/SportNameMatch.kt	\\s+
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportNameMatch.kt	ss
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportNameMatch.kt	ß
+1	empty	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	\0
 2	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	:
 1	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	; TheSportsDB for 6 h
 1	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	; no fallback, unavailable for 6 h
 1	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	SportsHub
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	cricket
-1	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	no source for
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	national
+2	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	no source for
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	rugby.164205
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	rugby.17567
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	rugby.180659
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	rugby.244293
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	rugby.289234
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	rugby.289237
 1	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	sofascore failed
 1	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	sofascore standings failed
 1	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	sport:
 1	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	thesportsdb failed
+1	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	world rugby failed
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsCalendar.kt	@
 6	empty	app/src/main/java/tv/own/owntv/features/sport/SportsCalendarScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsCalendarScreen.kt	,
@@ -1233,6 +1242,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsHubScreen.kt	settings
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsHubScreen.kt	soon
 4	empty	app/src/main/java/tv/own/owntv/features/sport/SportsLeagueScreen.kt	\0
+7	empty	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	10055
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	11623
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	1590
@@ -1270,6 +1280,41 @@
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	5835
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	791
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	8039
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Bunnings Warehouse NPC
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Challenge Cup
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Champions Cup
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Currie Cup
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	EPCR Challenge Cup
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	English Premiership
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Hilux NPC
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Investec Champions Cup
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Japan League One
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	MLR
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Major League Rugby
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Men's International
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	NPC
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Nations Championship
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Nations Cup
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	PWR
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Pacific Nations Cup
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Premiership
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Premiership Rugby Cup
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Premiership Womens Rugby
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Pro D2
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Rugby World Cup
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Six Nations
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Super Rugby
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Super Rugby AU
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Super Rugby Americas
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Super Rugby Aus
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Super Rugby Pacific
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	The Rugby Championship
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Top 14
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	URC
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Women's Rugby World Cup
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Women's Six Nations
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	Womens Six Nations
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	World Rugby Nations Cup
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	afc.asian.cup
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	afc.champions
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	afl
@@ -1392,7 +1437,7 @@
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	racing.f1
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	racing.nhra
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	rsa.1
-27	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	rugby
+34	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	rugby
 5	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	rugby-league
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	rugby-league.3
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	rugby.164205
@@ -1524,11 +1569,24 @@
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	wnba
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	womens-college-basketball
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	womens-college-volleyball
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	worldrugby.japan-league-one
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	worldrugby.nations-cup
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	worldrugby.pacific-nations-cup
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	worldrugby.pro-d2
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	worldrugby.pwr
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	worldrugby.super-rugby-americas
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	worldrugby.womens-six-nations
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	wta
 2	empty	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	-
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	b-$it
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	header
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	lineup-r-$it
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	lineup-s-$it
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	lineups-bench
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	lineups-coach
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	lineups-none
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	lineups-sides
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	no-broadcasts
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	table
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	tabs
@@ -1546,12 +1604,14 @@
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsModels.kt	golf
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsModels.kt	hockey
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsModels.kt	mma
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsModels.kt	mru
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsModels.kt	racing
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsModels.kt	rugby
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsModels.kt	rugby-league
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsModels.kt	soccer
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsModels.kt	tennis
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsModels.kt	volleyball
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsModels.kt	wru
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	#
 1	locale	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	EEE
 1	locale	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	EEEd
@@ -1713,6 +1773,94 @@
 1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	strTimestamp
 1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	strVenue
 1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	yes
+4	empty	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	\0
+1	url	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	&endDate=
+1	url	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	&events=
+1	url	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	&page=
+1	url	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	&sort=asc
+1	url	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	&startDate=
+1	technical	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	+
+1	url	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	/event/
+1	url	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	/event?pageSize=100
+1	url	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	/match/
+1	url	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	/match?pageSize=100
+1	url	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	/standings
+1	url	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	/summary
+1	url	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	/wr/
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	A
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	Accept
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	B
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	C
+1	technical	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	HH:mm
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	Head Coach
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	L
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	LHT
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	League
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	U
+1	log	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	World Rugby HTTP
+1	regex	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	\\b(19|20)\\d{2}(\\s*[-/–]\\s*\\d{2,4})?\\b
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	abbreviation
+1	mime	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	application/json
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	away
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	bonusPoints
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	caps
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	captainIds
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	city
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	clock
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	club
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	content
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	display
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	drawn
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	end
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	entries
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	eventPhase
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	fc
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	home
+1	url	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	https://api.wr-rims-prod.pulselive.com/rugby/v3
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	id
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	label
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	list
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	lost
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	matchId
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	millis
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	name
+1	technical	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	null
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	numPages
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	number
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	outcome
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	pageInfo
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	played
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	player
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	points
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	pointsAgainst
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	pointsFor
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	positionLabel
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	rc
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	rfc
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	rugby
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	scores
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	secs
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	shortLabel
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	sport
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	start
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	status
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	tables
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	team
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	teamList
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	teams
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	the
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	time
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	union
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	united states
+3	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	united states of america
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	us
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	usa
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	venue
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	w
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	women
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	womens
+1	json	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	won
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/WorldRugbyApi.kt	wr
 1	json	app/src/main/java/tv/own/owntv/features/subtitles/SubtitleSearchViewModel.kt	ai_translated
 1	json	app/src/main/java/tv/own/owntv/features/subtitles/SubtitleSearchViewModel.kt	attributes
 1	json	app/src/main/java/tv/own/owntv/features/subtitles/SubtitleSearchViewModel.kt	data

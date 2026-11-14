@@ -61,8 +61,11 @@ import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
 
-/** The match page's tabs: the league table and who broadcasts the game. */
-private enum class MatchTab { TABLE, BROADCASTS }
+/**
+ * The match page's tabs: the team sheets (DPTV v2.9.20, World Rugby's games, first so the page
+ * opens on them), the league table and who broadcasts the game.
+ */
+private enum class MatchTab { LINEUPS, TABLE, BROADCASTS }
 
 /** The tier colours of the reasons: guide green, the event's own channel blue, likely muted. */
 private val TierGuide = Color(0xFF9FE07E)
@@ -70,7 +73,7 @@ private val TierEvent = Color(0xFF7FD3FF)
 
 /**
  * A match (v2.6.0, OwnTV's Sports Hub match page). Left: the crumb, the score header (crests, score,
- * LIVE, day, round and venue), Follow for either side, then the Table and Broadcasts tabs. Right:
+ * LIVE, day, round and venue), Follow for either side, then the Line-ups, Table and Broadcasts tabs. Right:
  * *Watch live* — the user's channels showing it, found by [SportsMatcher] across channel names and
  * guide text, each with why it is listed. OK on a channel previews it above the list (DPTV's rule:
  * nothing plays until picked); OK again plays it full screen.
@@ -93,6 +96,7 @@ internal fun SportsMatchScreen(
     val matchesState by vm.matches.collectAsStateWithLifecycle()
     val recordPlans by vm.recordPlans.collectAsStateWithLifecycle()
     val standings by vm.standings.collectAsStateWithLifecycle()
+    val lineups by vm.lineups.collectAsStateWithLifecycle()
     val followedTeams by vm.followedTeams.collectAsStateWithLifecycle()
     val followedPlayers by vm.followedPlayers.collectAsStateWithLifecycle()
     val preferred by vm.preferredLanguages.collectAsStateWithLifecycle()
@@ -107,7 +111,13 @@ internal fun SportsMatchScreen(
         standings.firstOrNull { t -> t.leagueId == fixture.leagueId && t.rows.any { it.isTeam(fixture.home) || it.isTeam(fixture.away) } }
             ?: standings.firstOrNull { it.leagueId == fixture.leagueId }
     }
-    val tabs = MatchTab.entries.filter { it != MatchTab.TABLE || table != null }
+    val tabs = MatchTab.entries.filter {
+        when (it) {
+            MatchTab.LINEUPS -> fixture.worldRugbyMatchId != null
+            MatchTab.TABLE -> table != null
+            MatchTab.BROADCASTS -> true
+        }
+    }
     var tab by remember(fixture.id) { mutableStateOf<MatchTab?>(null) }
     val shownTab = tab?.takeIf { it in tabs } ?: tabs.first()
 
@@ -162,7 +172,13 @@ internal fun SportsMatchScreen(
                         ) {
                             tabs.forEachIndexed { i, t ->
                                 StageTab(
-                                    label = stringResource(if (t == MatchTab.TABLE) R.string.sport_tab_table else R.string.sport_tab_broadcasts),
+                                    label = stringResource(
+                                        when (t) {
+                                            MatchTab.LINEUPS -> R.string.sport_tab_lineups
+                                            MatchTab.TABLE -> R.string.sport_tab_table
+                                            MatchTab.BROADCASTS -> R.string.sport_tab_broadcasts
+                                        },
+                                    ),
                                     count = if (t == MatchTab.BROADCASTS && fixture.broadcasts.isNotEmpty()) fixture.broadcasts.size.toString() else "",
                                     selected = shownTab == t, onClick = { tab = t },
                                     modifier = if (i == 0) Modifier.focusRequester(tabFocus) else Modifier,
@@ -184,12 +200,14 @@ internal fun SportsMatchScreen(
                         }
                     }
                     when (shownTab) {
+                        MatchTab.LINEUPS -> lineupItems(lineups, fixture)
                         MatchTab.TABLE -> item(key = "table") { TablePreview(table, fixture) { onOpenLeague(fixture.leagueId) } }
                         MatchTab.BROADCASTS -> {
                             if (fixture.broadcasts.isEmpty()) {
                                 item(key = "no-broadcasts") {
-                                    // SofaScore and TheSportsDB carry no broadcasters, so their leagues say so plainly (v2.5.0).
-                                    val none = if (sportsLeagueById(fixture.leagueId)?.source == LeagueSource.SOFASCORE) R.string.sport_no_broadcasts_other else R.string.sport_no_broadcasts
+                                    // SofaScore, TheSportsDB and World Rugby carry no broadcasters, so their leagues say so
+                                    // plainly (v2.5.0); a World Rugby game ESPN also lists has ESPN's.
+                                    val none = if (sportsLeagueById(fixture.leagueId)?.source != LeagueSource.ESPN) R.string.sport_no_broadcasts_other else R.string.sport_no_broadcasts
                                     Text(stringResource(none), style = stageText(18, 400), color = StageColors.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(18.mpx))
                                 }
                             }
@@ -286,6 +304,72 @@ internal fun SportsMatchScreen(
             )
         }
         tv.own.owntv.ui.components.InAppToast(recordToast)
+    }
+}
+
+/**
+ * (DPTV v2.9.20) The Line-ups tab: the two team sheets side by side, home left, starters by number,
+ * then the replacements and the head coaches. One focusable row per pair so the remote scrolls the
+ * list; OK does nothing. Until the teams are named it says so.
+ */
+private fun androidx.compose.foundation.lazy.LazyListScope.lineupItems(state: SportsViewModel.LineupState, f: Fixture) {
+    val sheets = (state as? SportsViewModel.LineupState.Content)?.lineups
+    if (sheets == null || !sheets.announced) {
+        item(key = "lineups-none") {
+            val text = when (state) {
+                SportsViewModel.LineupState.Loading -> R.string.sport_loading
+                SportsViewModel.LineupState.Failed -> R.string.sport_lineups_failed
+                else -> R.string.sport_lineups_none
+            }
+            Text(stringResource(text), style = stageText(18, 400), color = StageColors.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(18.mpx))
+        }
+        return
+    }
+    item(key = "lineups-sides") {
+        Row(Modifier.fillMaxWidth().padding(top = 12.mpx, bottom = 4.mpx, start = 12.mpx, end = 12.mpx), horizontalArrangement = Arrangement.spacedBy(24.mpx)) {
+            listOfNotNull(f.home, f.away).forEach { side ->
+                Text(teamLabel(side), style = stageText(17, 800), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            }
+        }
+    }
+    val starters = maxOf(sheets.home.starters.size, sheets.away.starters.size)
+    items(starters, key = { "lineup-s-$it" }) { i -> LineupRow(sheets.home.starters.getOrNull(i), sheets.away.starters.getOrNull(i)) }
+    val bench = maxOf(sheets.home.replacements.size, sheets.away.replacements.size)
+    if (bench > 0) {
+        item(key = "lineups-bench") {
+            Text(stringResource(R.string.sport_lineups_replacements), style = stageText(17, 800), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 12.mpx, top = 15.mpx, bottom = 4.mpx))
+        }
+        items(bench, key = { "lineup-r-$it" }) { i -> LineupRow(sheets.home.replacements.getOrNull(i), sheets.away.replacements.getOrNull(i)) }
+    }
+    if (sheets.home.coach != null || sheets.away.coach != null) {
+        item(key = "lineups-coach") {
+            StageRow(onClick = {}, height = 48.mpx, modifier = Modifier.fillMaxWidth().padding(top = 9.mpx), horizontalPadding = 12.mpx, gap = 24.mpx) { _ ->
+                listOf(sheets.home.coach, sheets.away.coach).forEach { coach ->
+                    Text(
+                        coach?.let { stringResource(R.string.sport_lineups_coach, it) }.orEmpty(),
+                        style = stageText(16, 500), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** One line of the team sheets: the home player and the away player wearing the same number. */
+@Composable
+private fun LineupRow(home: LineupPlayer?, away: LineupPlayer?) {
+    StageRow(onClick = {}, height = 48.mpx, modifier = Modifier.fillMaxWidth(), horizontalPadding = 12.mpx, gap = 24.mpx) { focused ->
+        listOf(home, away).forEach { p ->
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.mpx)) {
+                if (p != null) {
+                    Text(p.number?.toString().orEmpty(), style = stageText(16, 800), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, modifier = Modifier.width(30.mpx))
+                    Text(p.name, style = stageText(17, 600), color = if (focused) StageColors.Text else StageColors.Body, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    if (p.captain) StageTag(stringResource(R.string.sport_lineups_captain))
+                    Spacer(Modifier.weight(1f))
+                    p.position?.let { Text(it, style = stageText(14, 500), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                }
+            }
+        }
     }
 }
 

@@ -37,6 +37,7 @@ import tv.own.owntv.features.settings.LanguageSettingsViewModel
 import tv.own.owntv.features.sport.EspnApi
 import tv.own.owntv.features.sport.SofaScoreApi
 import tv.own.owntv.features.sport.TheSportsDbApi
+import tv.own.owntv.features.sport.WorldRugbyApi
 import tv.own.owntv.features.sport.SportsApi
 import tv.own.owntv.features.sport.LiveSourceIdsProvider
 import tv.own.owntv.features.sport.ProfileLiveSourceIdsProvider
@@ -207,6 +208,8 @@ val appModule = module {
     singleOf(::SofaScoreApi)
     // TheSportsDB, the stand-in for SofaScore's rugby league while it refuses (v2.6.0).
     singleOf(::TheSportsDbApi)
+    // World Rugby's own feed, the preferred source for rugby (DPTV v2.9.20).
+    singleOf(::WorldRugbyApi)
     singleOf(::SportsApi)
     // Static matcher vocabulary (team aliases/exonyms + stop-words) from res/raw/sports_matching.json.
     // Takes a Context, resolved from androidContext().

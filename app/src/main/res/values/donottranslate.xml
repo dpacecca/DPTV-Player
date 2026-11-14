@@ -111,6 +111,13 @@
     <string name="sport_league_rugby_289237" translatable="false">Women\'s Rugby World Cup</string>
     <string name="sport_league_rugby_289262" translatable="false">Major League Rugby</string>
     <string name="sport_league_rugby_289234" translatable="false">International Test Match</string>
+    <string name="sport_league_worldrugby_nations_cup" translatable="false">World Rugby Nations Cup</string>
+    <string name="sport_league_worldrugby_pacific_nations_cup" translatable="false">Pacific Nations Cup</string>
+    <string name="sport_league_worldrugby_womens_six_nations" translatable="false">Women\'s Six Nations</string>
+    <string name="sport_league_worldrugby_pwr" translatable="false">Premiership Women\'s Rugby</string>
+    <string name="sport_league_worldrugby_pro_d2" translatable="false">Pro D2</string>
+    <string name="sport_league_worldrugby_japan_league_one" translatable="false">Japan Rugby League One</string>
+    <string name="sport_league_worldrugby_super_rugby_americas" translatable="false">Super Rugby Americas</string>
     <string name="sport_league_rugby_league_3" translatable="false">NRL</string>
     <string name="sport_league_sofascore_10055" translatable="false">World Rugby Sevens Series</string>
     <string name="sport_league_sofascore_11623" translatable="false">World Rugby Sevens Series, Women</string>
