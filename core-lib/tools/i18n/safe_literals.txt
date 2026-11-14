@@ -2366,6 +2366,24 @@
 1	regex	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	^(?:[&+/|·,:\\-–—]+\\s+)+
 1	regex	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	^([A-Z]{2,3})\\s*\\|\\s*
 1	regex	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	^([A-Z]{2}):\\s*
+1	empty	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	\0
+1	url	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	&stream_id=
+1	url	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	/
+1	regex	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	/(\\d+)(\\.[A-Za-z0-9]+)?(\\?.*)?$
+1	technical	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	DPTV-Server
+1	log	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	ServerVersions
+1	json	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	active
+1	protocol	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	dptv_versions
+2	json	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	fps
+2	json	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	height
+1	json	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	main
+1	json	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	name
+1	json	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	null
+2	json	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	ok
+2	json	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	reason
+1	json	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	stream_id
+1	log	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	versions not read: ${it.javaClass.simpleName}
+1	technical	core/src/main/java/tv/own/owntv/core/live/ServerChannelVersions.kt	✕
 1	log	core/src/main/java/tv/own/owntv/core/live/WatchSession.kt	WatchSession
 1	log	core/src/main/java/tv/own/owntv/core/live/WatchSession.kt	watch close sourceId=$sourceId watching=${_watching.value}
 1	log	core/src/main/java/tv/own/owntv/core/live/WatchSession.kt	watch open sourceId=$sourceId watching=${_watching.value}

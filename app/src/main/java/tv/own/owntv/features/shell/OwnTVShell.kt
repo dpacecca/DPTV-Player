@@ -244,6 +244,9 @@ fun OwnTVShell(
     var trendingSearchActive by remember { mutableStateOf(false) }
     val player = koinInject<OwnTVPlayer>()
     val channelVersions = koinInject<tv.own.owntv.core.live.ChannelVersions>()
+    val serverVersions = koinInject<tv.own.owntv.core.live.ServerChannelVersions>()
+    // (DPTV v2.9.18) Versions already tried for the channel being watched, so a stalled one is not picked again.
+    val triedVersions = remember { mutableMapOf<Long, MutableSet<String>>() }
     // Docked mini-player size (% of screen width) + position, configurable in Settings and from the
     // mini-player's own controls. Read straight from settings so both entry points stay in sync.
     val settingsRepo = koinInject<tv.own.owntv.core.settings.SettingsRepository>()
@@ -2114,7 +2117,24 @@ fun OwnTVShell(
                     // The channel's other versions, read when the button is pressed; a pick is an
                     // ordinary tune, the same as picking it in the channel list.
                     sources = previewChannel?.takeIf { isTunedLive }?.let { ch ->
-                        tv.own.owntv.player.HudSources(load = { channelVersions.of(ch) }, playingId = ch.id, onPick = liveVm::ensurePlaying)
+                        // (DPTV v2.9.18) The playlist's own versions, then DPTV-Server's of a server channel
+                        // (its backup playlists, with the server's last check of each).
+                        val main = serverVersions.mainChannel(ch)
+                        tv.own.owntv.player.HudSources(
+                            load = {
+                                val local = channelVersions.of(main)
+                                val fromServer = serverVersions.of(ch)
+                                val seen = local.map { it.channel.streamUrl }.toMutableSet()
+                                (local + fromServer.filter { seen.add(it.channel.streamUrl) })
+                                    .let { all -> all.filter { it.channel.id == ch.id } + all.filter { it.channel.id != ch.id } }
+                            },
+                            playingId = ch.id,
+                            onPick = liveVm::ensurePlaying,
+                            onStalled = {
+                                val tried = triedVersions.getOrPut(main.id) { mutableSetOf() }
+                                serverVersions.next(ch, tried)?.let { next -> liveVm.ensurePlaying(next); true } ?: false
+                            },
+                        )
                     },
                     modifier = Modifier.fillMaxSize(),
                 )

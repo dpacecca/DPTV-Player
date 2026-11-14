@@ -103,6 +103,8 @@
     <string name="player_provider_busy">The provider is busy.</string>
     <!-- Translators: Shown under the loading spinner when a live channel that was playing has been frozen for a while and the player is reconnecting by itself (no action needed). -->
     <string name="player_reconnecting">Stream interrupted. Reconnecting…</string>
+    <!-- (DPTV v2.9.18) Under the spinner: the stream kept stalling, so the player moved to another version of the channel that passed DPTV-Server's check. -->
+    <string name="player_switched_version">Moved to another version of this channel</string>
     <!-- Translators: Dialog title for the audio track selection dialog in the player HUD. -->
     <string name="player_audio_track">Audio Track</string>
     <!-- Translators: Dialog title for the subtitle track selection dialog in the player HUD. -->

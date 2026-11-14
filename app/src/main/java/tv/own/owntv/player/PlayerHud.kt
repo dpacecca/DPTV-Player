@@ -105,6 +105,9 @@ private const val TRACK_POLL_TRIES = 20
  *  Counted from the stall, which itself only starts once the buffer (~10s) has run dry. */
 private const val RECONNECT_NOTICE_AFTER_MS = 10_000L
 
+/** (DPTV v2.9.18) A stall this long moves a channel with versions to the next one that works. */
+private const val SWITCH_VERSION_AFTER_MS = 15_000L
+
 internal enum class HudDialog { NONE, AUDIO, SUBS, SPEED, ZOOM, QUALITY, VOLUME, JUMP_BACK, SLEEP_TIMER, SOURCES }
 
 /**
@@ -116,6 +119,8 @@ class HudSources(
     val load: suspend () -> List<tv.own.owntv.core.live.ChannelVersion>,
     val playingId: Long,
     val onPick: (tv.own.owntv.core.database.entity.ChannelEntity) -> Unit,
+    /** (DPTV v2.9.18) The stream has stalled [SWITCH_VERSION_AFTER_MS]: move to another version; true if it did. */
+    val onStalled: (suspend () -> Boolean)? = null,
 )
 
 /** What the top-left channel OSD shows for direct tune: the digits being typed, the channel a number
@@ -1001,6 +1006,23 @@ fun PlayerHud(
             buffering -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                 OwnTVSpinner(sizeDp = 56)
                 val stalledSince = stalledSinceMs
+                // (DPTV v2.9.18) Still stalled after the reconnect tries: another version of the channel.
+                val onStalled = sources?.onStalled
+                val switched by produceState(false, stalledSince, onStalled) {
+                    if (stalledSince == null || onStalled == null) return@produceState
+                    delay(SWITCH_VERSION_AFTER_MS - (android.os.SystemClock.elapsedRealtime() - stalledSince))
+                    value = onStalled()
+                }
+                if (switched) {
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        stringResource(R.string.player_switched_version),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.85f),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(0.7f),
+                    )
+                }
                 if (providerBackOff == null && stalledSince != null) {
                     val showNotice by produceState(false, stalledSince) {
                         delay(RECONNECT_NOTICE_AFTER_MS - (android.os.SystemClock.elapsedRealtime() - stalledSince))
