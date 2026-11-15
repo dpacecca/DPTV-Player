@@ -16,9 +16,11 @@ COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev --no-audit --no-fund || npm install --omit=dev --no-audit --no-fund
 COPY server/ ./server/
 COPY --from=web /app/web/dist ./web/dist
-RUN mkdir -p /data && chown node:node /data
-USER node
+# su-exec: the entrypoint starts as root only to hand /data to the node user, then runs the server as it.
+RUN apk add --no-cache su-exec && mkdir -p /data && chown node:node /data
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 VOLUME /data
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s CMD wget -qO- http://127.0.0.1:3000/healthz >/dev/null || exit 1
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "server/index.js"]
