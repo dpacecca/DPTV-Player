@@ -19,7 +19,7 @@ export type RecordActions = {
 
 /**
  * Live TV, laid out like DPTV-Player's Live TV on Android (v2): the video and what's on at the top, the
- * day chips, then the categories and the guide. Click a channel or programme to preview the channel (and see the programme, with Record);
+ * day chips, then the guide; the categories run the full height on the left. Click a channel or programme to preview the channel (and see the programme, with Record);
  * double-click it, or the video, for full screen.
  */
 export function LiveTv({ categories, channels, query, onQuery, favourites, toggleFavourite, rec }: {
@@ -174,67 +174,69 @@ export function LiveTv({ categories, channels, query, onQuery, favourites, toggl
 
   return (
     <div className="livetv">
-      <section className="top">
-        <div ref={playerBox} className="top-player">
-          <Player source={playing ? { kind: 'live', url: api.streamUrl(playing.id), title: playing.name } : null} onDoubleClick={fullscreen} />
-        </div>
-        <InfoBlock
-          channel={selChannel}
-          programme={selProg}
-          next={nextProg}
-          now={now}
-          playingId={playing?.id ?? null}
-          favourite={selChannel ? favourites.has(selChannel.id) : false}
-          onFavourite={() => selChannel && toggleFavourite(selChannel.id)}
-          onWatch={() => selChannel && play(selChannel)}
-          onFullscreen={fullscreen}
-          rec={rec}
-        />
-      </section>
-
-      <div className="toolbar">
-        <button className={panelOpen ? 'chip cat-toggle on' : 'chip cat-toggle'} onClick={() => setPanelOpen((o) => !o)} title="Categories">
-          <span className="burger" aria-hidden="true">☰</span>
-          <span className="cat-toggle-name">{catName}</span>
-          <span className="count">{shown.length}</span>
-        </button>
-        <label className="guide-search">
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M20 20l-4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-          <input type="search" placeholder="Search programs or channels..." value={query} onChange={(e) => onQuery(e.target.value)} aria-label="Search programs or channels" />
-        </label>
-        <div className="day-chips">
-          {days.map((d, i) => (
-            <button key={d} className={i === dayOffset ? 'chip day on' : 'chip day'} onClick={() => setDayOffset(i)}>{dayLabel(d, today)}</button>
+      {panelOpen && (
+        <aside className="categories">
+          <CatButton on={!query && category === ALL} name="All channels" count={channels.length} onClick={() => setCategory(ALL)} />
+          <CatButton on={!query && category === FAVOURITES} name="★ Favourites" count={favourites.size} onClick={() => setCategory(FAVOURITES)} />
+          <div className="cat-sep" />
+          {categories.map((c) => (
+            <CatButton key={c.id} on={!query && category === c.id} name={c.name} count={counts.get(c.id) || 0} onClick={() => { setCategory(c.id); if (window.innerWidth < 1000) setPanelOpen(false); }} />
           ))}
-        </div>
-        <button className="chip jump-now" onClick={jumpToNow}>Jump to now</button>
-      </div>
+        </aside>
+      )}
+      <div className="live-main">
+        <section className="top">
+          <div ref={playerBox} className="top-player">
+            <Player source={playing ? { kind: 'live', url: api.streamUrl(playing.id), title: playing.name } : null} onDoubleClick={fullscreen} />
+          </div>
+          <InfoBlock
+            channel={selChannel}
+            programme={selProg}
+            next={nextProg}
+            now={now}
+            playingId={playing?.id ?? null}
+            favourite={selChannel ? favourites.has(selChannel.id) : false}
+            onFavourite={() => selChannel && toggleFavourite(selChannel.id)}
+            onWatch={() => selChannel && play(selChannel)}
+            onFullscreen={fullscreen}
+            rec={rec}
+          />
+        </section>
 
-      <div className="guide-area">
-        {panelOpen && (
-          <aside className="categories">
-            <CatButton on={!query && category === ALL} name="All channels" count={channels.length} onClick={() => setCategory(ALL)} />
-            <CatButton on={!query && category === FAVOURITES} name="★ Favourites" count={favourites.size} onClick={() => setCategory(FAVOURITES)} />
-            <div className="cat-sep" />
-            {categories.map((c) => (
-              <CatButton key={c.id} on={!query && category === c.id} name={c.name} count={counts.get(c.id) || 0} onClick={() => { setCategory(c.id); if (window.innerWidth < 1000) setPanelOpen(false); }} />
+        <div className="toolbar">
+          <button className={panelOpen ? 'chip cat-toggle on' : 'chip cat-toggle'} onClick={() => setPanelOpen((o) => !o)} title="Categories">
+            <span className="burger" aria-hidden="true">☰</span>
+            <span className="cat-toggle-name">{catName}</span>
+            <span className="count">{shown.length}</span>
+          </button>
+          <label className="guide-search">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M20 20l-4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+            <input type="search" placeholder="Search programs or channels..." value={query} onChange={(e) => onQuery(e.target.value)} aria-label="Search programs or channels" />
+          </label>
+          <div className="day-chips">
+            {days.map((d, i) => (
+              <button key={d} className={i === dayOffset ? 'chip day on' : 'chip day'} onClick={() => setDayOffset(i)}>{dayLabel(d, today)}</button>
             ))}
-          </aside>
-        )}
-        <GuideGrid
-          channels={shown}
-          programmesOf={(c) => programmesFor(c, from)}
-          from={from}
-          to={to}
-          now={now}
-          playingId={playing?.id ?? null}
-          selection={selection}
-          recordingOf={rec.recordingOf}
-          onSelect={(c, p) => setSelection({ channelId: c.id, start: p?.start ?? 0 })}
-          onPlay={play}
-          onVisible={onVisible}
-          resetKey={`${category}|${query}|${from}|${jumpKey}`}
-        />
+          </div>
+          <button className="chip jump-now" onClick={jumpToNow}>Jump to now</button>
+        </div>
+
+        <div className="guide-area">
+          <GuideGrid
+            channels={shown}
+            programmesOf={(c) => programmesFor(c, from)}
+            from={from}
+            to={to}
+            now={now}
+            playingId={playing?.id ?? null}
+            selection={selection}
+            recordingOf={rec.recordingOf}
+            onSelect={(c, p) => setSelection({ channelId: c.id, start: p?.start ?? 0 })}
+            onPlay={play}
+            onVisible={onVisible}
+            resetKey={`${category}|${query}|${from}|${jumpKey}`}
+          />
+        </div>
       </div>
     </div>
   );
