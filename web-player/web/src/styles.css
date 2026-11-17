@@ -100,13 +100,14 @@ nav { display: flex; gap: 4px; flex: none; }
 .tag.live .dot { background: #fff; }
 
 /* ---------- live tv ---------- */
-/* The categories run the full height on the left; beside them the preview (about half the width, 16:9) with
+/* The categories run the full height on the left; beside them the preview (about a quarter of the width, 16:9) with
    the programme, the day bar, and the guide taking every row that is left. */
 .livetv { flex: 1; min-height: 0; display: flex; position: relative; }
 .live-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
 .top { display: flex; gap: 22px; padding: 16px 20px; border-bottom: 1px solid var(--line); flex: none; overflow: hidden; }
-/* Half the width, but never so tall the guide drops below four rows (header, toolbar, ruler and rows: ~400 px). */
-.top-player { width: min(50%, calc((100vh - 400px) * 16 / 9)); aspect-ratio: 16 / 9; flex: none; }
+/* About a quarter of the width (half the earlier preview), at least 360 px, and never so tall the guide
+   drops below four rows (header, toolbar, ruler and rows: ~400 px). */
+.top-player { width: min(max(25%, 360px), calc((100vh - 400px) * 16 / 9)); aspect-ratio: 16 / 9; flex: none; }
 .top .info { height: 0; min-height: 100%; }
 .player { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 14px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
 .player:fullscreen { border-radius: 0; }
