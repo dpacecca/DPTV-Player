@@ -65,7 +65,13 @@ fun planEpisodeMerge(existing: List<EpisodeEntity>, incoming: List<EpisodeEntity
             // The air date is the one field the stored row may know better than the provider: it can
             // have been filled in from TMDB for a panel that dates nothing. A refresh must not blank
             // it back out, so a missing incoming date keeps whatever is already there.
-            val merged = row.copy(id = current.id, airDateMs = row.airDateMs ?: current.airDateMs)
+            // (DPTV v2.9.25) Likewise the synopsis and running time: a panel that stops sending them keeps the stored ones.
+            val merged = row.copy(
+                id = current.id,
+                airDateMs = row.airDateMs ?: current.airDateMs,
+                plot = row.plot ?: current.plot,
+                durationSecs = row.durationSecs ?: current.durationSecs,
+            )
             // Skip no-op writes: on a typical refresh nothing but the new episodes has changed, and
             // every write here also fires the episodes_fts triggers.
             if (merged != current) updates.add(merged)

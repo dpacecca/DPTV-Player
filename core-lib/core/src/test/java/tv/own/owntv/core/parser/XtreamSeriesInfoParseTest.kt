@@ -91,4 +91,20 @@ class XtreamSeriesInfoParseTest {
         assertEquals(listOf("1", "2", "3", "4"), episodes.map { it.id })
         assertEquals(listOf(0, 0, 7, 8), episodes.map { it.episodeNumber })
     }
+
+    @Test
+    fun `an episode's synopsis and running time come from its info, and both plot keys are read past`() {
+        val episodes = parse(
+            """{"episodes":{"1":[
+                {"id":"1","episode_num":1,"plot":"Top level.","description":"Also top level.",
+                 "info":{"plot":"  Michael freaks out.  ","overview":"Second","duration_secs":1320,"duration":"00:30:00"}},
+                {"id":"2","episode_num":2,"info":{"duration":"01:02:03","description":"From description"}},
+                {"id":"3","episode_num":3,"plot":"Only top level","info":{"plot":"","duration":"bad"}},
+                {"id":"4","episode_num":4,"info":[]}
+            ]}}""",
+        )
+        assertEquals(listOf("1", "2", "3", "4"), episodes.map { it.id })
+        assertEquals(listOf("Michael freaks out.", "From description", "Only top level", null), episodes.map { it.plot })
+        assertEquals(listOf(1320, 3723, null, null), episodes.map { it.durationSecs })
+    }
 }

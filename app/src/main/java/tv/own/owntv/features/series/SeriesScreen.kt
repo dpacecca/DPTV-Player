@@ -1668,8 +1668,9 @@ private fun EpisodeView(
                                         modifier = Modifier.padding(top = 4.mpx),
                                     )
                                     plot?.takeIf { it.isNotBlank() }?.let {
+                                        // (DPTV v2.9.25) Two lines of the episode's synopsis.
                                         Text(
-                                            it, style = stageText(16, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                            it, style = stageText(16, 400), color = StageColors.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis,
                                             modifier = Modifier.padding(top = 6.mpx),
                                         )
                                     }

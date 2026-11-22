@@ -2822,8 +2822,10 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	category_name
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	container_extension
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	cover
-2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	description
+4	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	description
 1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	direct_source
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	duration
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	duration_secs
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	epg_channel_id
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	epg_listings
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	episode_num
@@ -2850,9 +2852,10 @@
 3	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	name
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	num
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	objects
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	overview
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	parseOrReadMs=$parseOrReadDelta callbackMs=$callbackDelta
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	parseOrReadMs=${metrics.parseOrReadMs} callbackMs=${metrics.callbackMs}
-2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	plot
+4	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	plot
 1	log	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	probeHls failed for source ${s.id}
 1	log	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	probeTsPlayable failed for source ${s.id}
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	rating

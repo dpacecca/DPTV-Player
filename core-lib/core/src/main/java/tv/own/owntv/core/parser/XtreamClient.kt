@@ -36,6 +36,10 @@ data class XtEpisode(
     val id: String, val seasonNumber: Int, val episodeNumber: Int, val title: String, val containerExt: String?,
     /** When it first aired, epoch ms — the panel's `releasedate`/`air_date`, or its `added` stamp. */
     val airDateMs: Long? = null,
+    /** (DPTV v2.9.25) The episode's synopsis, from its `info.plot` (or a top-level `plot`). */
+    val plot: String? = null,
+    /** (DPTV v2.9.25) Its running time in seconds, from `info.duration_secs` (or `info.duration`). */
+    val durationSecs: Int? = null,
 )
 data class XtSeriesInfo(val episodes: List<XtEpisode>)
 
@@ -354,6 +358,8 @@ class XtreamClient(private val http: HttpClient) {
         var season = seasonFallback
         var airDate: Long? = null
         var added: Long? = null
+        var plot: String? = null
+        var durationSecs: Int? = null
         var pending = firstName
         while (pending != null || reader.hasNext()) {
             val name = pending ?: reader.nextName()
@@ -370,30 +376,69 @@ class XtreamClient(private val http: HttpClient) {
                 "release_date", "releaseDate", "releasedate", "air_date", "airdate" ->
                     airDate = firstOf(airDate, parseEpisodeDate(reader.nextStringOrNull()))
                 "added" -> added = reader.nextStringOrNull()?.toLongOrNull()?.takeIf { it > 0 }?.times(1000)
-                "info" -> airDate = firstOf(airDate, readEpisodeInfoDate(reader))
+                "plot", "description" -> {
+                    // Read first, always: the reader must consume the value whichever one wins.
+                    val text = reader.nextStringOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+                    if (plot == null) plot = text
+                }
+                "info" -> {
+                    val info = readEpisodeInfo(reader)
+                    airDate = firstOf(airDate, info.date)
+                    plot = info.plot ?: plot
+                    durationSecs = info.durationSecs ?: durationSecs
+                }
                 else -> reader.skipValue()
             }
         }
         reader.endObject()
         // Keep a missing provider title empty. The Compose episode renderer supplies a localized
         // episode-number fallback; storing English here would freeze the device language in the DB.
-        id?.let { out.add(XtEpisode(it, season, epNum, title.trim(), ext, airDate ?: added)) }
+        id?.let { out.add(XtEpisode(it, season, epNum, title.trim(), ext, airDate ?: added, plot, durationSecs)) }
     }
 
-    /** The `info` sub-object of an episode — read for its air date, everything else skipped. */
-    private fun readEpisodeInfoDate(reader: JsonReader): Long? {
-        if (reader.peek() != JsonToken.BEGIN_OBJECT) { reader.skipValue(); return null }
+    /** What an episode's `info` sub-object says: its air date, synopsis and running time. */
+    private class EpisodeInfo(val date: Long?, val plot: String?, val durationSecs: Int?)
+
+    /**
+     * The `info` sub-object of an episode — read for its air date, synopsis (`plot`, else `overview`
+     * or `description`) and running time (`duration_secs`, else an "HH:MM:SS" `duration`); the rest
+     * is skipped. Every value is consumed whichever wins (see [firstOf]).
+     */
+    private fun readEpisodeInfo(reader: JsonReader): EpisodeInfo {
+        if (reader.peek() != JsonToken.BEGIN_OBJECT) { reader.skipValue(); return EpisodeInfo(null, null, null) }
         var date: Long? = null
+        var plot: String? = null
+        var secs: Int? = null
+        var clock: Int? = null
         reader.beginObject()
         while (reader.hasNext()) {
             when (reader.nextName()) {
                 "release_date", "releaseDate", "releasedate", "air_date", "airdate" ->
                     date = firstOf(date, parseEpisodeDate(reader.nextStringOrNull()))
+                "plot", "overview", "description" -> {
+                    val text = reader.nextStringOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+                    if (plot == null) plot = text
+                }
+                "duration_secs" -> {
+                    val n = reader.nextIntOrNull()?.takeIf { it > 0 }
+                    if (secs == null) secs = n
+                }
+                "duration" -> {
+                    val n = parseClockDuration(reader.nextStringOrNull())
+                    if (clock == null) clock = n
+                }
                 else -> reader.skipValue()
             }
         }
         reader.endObject()
-        return date
+        return EpisodeInfo(date, plot, secs ?: clock)
+    }
+
+    /** "HH:MM:SS" or "MM:SS" as seconds; null for anything else or zero. */
+    private fun parseClockDuration(raw: String?): Int? {
+        val parts = raw?.trim()?.split(':')?.takeIf { it.size in 2..3 } ?: return null
+        val nums = parts.map { it.trim().toIntOrNull() ?: return null }
+        return nums.fold(0) { acc, n -> acc * 60 + n }.takeIf { it > 0 }
     }
 
     /**
