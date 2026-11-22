@@ -214,7 +214,15 @@ class RecordingsViewModel(
      * while it is being written, and offering that from this screen would mean two readers on one
      * growing file and a picture that stops at whatever byte it started from.
      */
-    fun play(recording: RecordingEntity, resume: Boolean = false) {
+    /** (DPTV v2.9.26) A recording that could not be started, and why: the DVR screen's notice. */
+    data class PlayFailure(val title: String, val kind: tv.own.owntv.core.recording.RemoteRecorderException.Kind?, val detail: String?)
+
+    private val _playFailed = kotlinx.coroutines.flow.MutableStateFlow<PlayFailure?>(null)
+    val playFailed: kotlinx.coroutines.flow.StateFlow<PlayFailure?> = _playFailed
+    fun clearPlayFailed() { _playFailed.value = null }
+
+    /** [onStarted] runs once the recording is actually playing (DPTV v2.9.26: never a black player on a failure). */
+    fun play(recording: RecordingEntity, resume: Boolean = false, onStarted: () -> Unit = {}) {
         // v2.1.2: one still recording plays too, from what it has captured so far.
         if (recording.status != RecordingStatus.COMPLETED && recording.status != RecordingStatus.RECORDING) return
         if (recording.filePath == null) return
@@ -222,7 +230,14 @@ class RecordingsViewModel(
         viewModelScope.launch {
             // A recording the server made streams from the server: a fresh short-lived link each time.
             val path = if (RemoteRecordings.isRemote(recording)) {
-                recordings.serverPlaybackUrl(recording) ?: return@launch
+                recordings.serverPlaybackLink(recording).getOrElse { e ->
+                    val ex = e as? tv.own.owntv.core.recording.RemoteRecorderException
+                    tv.own.owntv.player.LiveDiagnosticsLog.event(
+                        PlayFailedLog + recording.id + LogSep + (ex?.kind?.name ?: NoServerLog) + LogSep + ex?.detail.orEmpty(),
+                    )
+                    _playFailed.value = PlayFailure(recording.title, ex?.kind, ex?.detail)
+                    return@launch
+                }
             } else {
                 recording.filePath ?: return@launch
             }
@@ -230,11 +245,13 @@ class RecordingsViewModel(
             if (settings.externalPlayerFor(MediaType.LIVE).first()) {
                 // Resume carries over to the other app: it starts where the recording was left.
                 externalPlayerLauncher.launch(path, recording.title, startPositionMs = startMs)
+                onStarted()
                 return@launch
             }
             if (!resume) forgetProgress(recording.id)
             player.play(path, title = recording.title, isLive = false, startPositionMs = startMs)
             track(recording.id, path)
+            onStarted()
         }
     }
 
@@ -304,5 +321,8 @@ class RecordingsViewModel(
         private const val END_MARGIN_MS = 60_000L
         private const val TRACK_FIRST_MS = 3_000L
         private const val TRACK_EVERY_MS = 5_000L
+        private const val PlayFailedLog = "dvr: no playback link for recording "
+        private const val LogSep = " "
+        private const val NoServerLog = "NO_SERVER"
     }
 }

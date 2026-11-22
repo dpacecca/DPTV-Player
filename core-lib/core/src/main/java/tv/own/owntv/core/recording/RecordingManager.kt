@@ -568,10 +568,18 @@ class RecordingManager(
      * A link the player can open for a recording the server made — short-lived, so fetched each time
      * it is played. Null when it is not the server's, or the server cannot be reached.
      */
-    suspend fun serverPlaybackUrl(recording: RecordingEntity): String? {
-        val remoteId = RemoteRecordings.remoteIdOf(recording.filePath) ?: return null
-        val config = remote.config() ?: return null
-        return runCatching { remote.playbackUrl(config, remoteId) }.getOrNull()
+    suspend fun serverPlaybackUrl(recording: RecordingEntity): String? = serverPlaybackLink(recording).getOrNull()
+
+    /**
+     * (DPTV v2.9.26) [serverPlaybackUrl] with the reason when there is no link: a [RemoteRecorderException]
+     * from the server (its own message in `detail`), or [IllegalStateException] when no recording server is
+     * set up on this device. The DVR screen says which instead of opening a black player.
+     */
+    suspend fun serverPlaybackLink(recording: RecordingEntity): Result<String> {
+        val remoteId = RemoteRecordings.remoteIdOf(recording.filePath)
+            ?: return Result.failure(RemoteRecorderException(RemoteRecorderException.Kind.BAD_RESPONSE))
+        val config = remote.config() ?: return Result.failure(IllegalStateException(NoServer))
+        return runCatching { remote.playbackUrl(config, remoteId) }
     }
 
     /**
@@ -679,6 +687,9 @@ private const val RULE_HORIZON_MS = 14L * 24 * 60 * 60 * 1000
 private const val SERVER_LIST_LIMIT = 200
 
 private const val TAG = "RecordingManager"
+
+/** (DPTV v2.9.26) [RecordingManager.serverPlaybackLink]'s failure when no recording server is set up. */
+private const val NoServer = "no recording server"
 
 /** Free/total space on the volume recordings are written to, and the floor they stop at (D8). */
 data class RecordingStorageInfo(val freeBytes: Long, val totalBytes: Long, val reserveBytes: Long) {

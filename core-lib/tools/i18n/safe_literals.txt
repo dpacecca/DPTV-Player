@@ -3195,6 +3195,7 @@
 1	log	core/src/main/java/tv/own/owntv/core/recording/RecordingEngine.kt	segment refused id=${row.id} seq=${segment.sequence}
 2	log	core/src/main/java/tv/own/owntv/core/recording/RecordingManager.kt	RecordingManager
 1	log	core/src/main/java/tv/own/owntv/core/recording/RecordingManager.kt	could not import server recording ${server.id}
+1	log	core/src/main/java/tv/own/owntv/core/recording/RecordingManager.kt	no recording server
 1	log	core/src/main/java/tv/own/owntv/core/recording/RecordingManager.kt	recording server refused or unreachable (${e.kind}), recording on this device instead
 1	technical	core/src/main/java/tv/own/owntv/core/recording/RecordingNotifications.kt	$effectiveLocale:$name
 1	technical	core/src/main/java/tv/own/owntv/core/recording/RecordingNotifications.kt	owntv_recordings

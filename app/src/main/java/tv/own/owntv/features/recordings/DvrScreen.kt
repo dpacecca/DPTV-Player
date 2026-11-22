@@ -119,6 +119,7 @@ fun DvrScreen(
     val sportPlans by vm.sportPlans.collectAsStateWithLifecycle()
     val progressRevision by vm.progressRevision.collectAsStateWithLifecycle()
     val deleteFailed by vm.deleteFailed.collectAsStateWithLifecycle()
+    val playFailed by vm.playFailed.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
 
@@ -165,9 +166,9 @@ fun DvrScreen(
         val i = items.indexOfFirst { it.key == key }
         return (items.getOrNull(i + 1) ?: items.getOrNull(i - 1))?.key
     }
+    // (DPTV v2.9.26) Full screen only once it is actually playing; a failure says why (playFailed below).
     val start: (RecordingEntity, Boolean) -> Unit = { r, resume ->
-        vm.play(r, resume = resume)
-        if (!externalOn) onFullscreen()
+        vm.play(r, resume = resume) { if (!externalOn) onFullscreen() }
     }
 
     // The rail's ▶ lands on the highlighted line (the first one), or on the Recorded / Scheduled switch.
@@ -313,6 +314,21 @@ fun DvrScreen(
                 confirmDeleteFor = null
                 scope.launch { withFrameNanos { }; runCatching { firstAction.requestFocus() } }
             },
+        )
+    }
+
+    playFailed?.let { f ->
+        val why = when (f.kind) {
+            null -> stringResource(R.string.dvr_play_failed_no_server)
+            tv.own.owntv.core.recording.RemoteRecorderException.Kind.UNREACHABLE -> stringResource(R.string.settings_recorder_err_unreachable)
+            tv.own.owntv.core.recording.RemoteRecorderException.Kind.UNAUTHORIZED -> stringResource(R.string.settings_recorder_err_unauthorized)
+            tv.own.owntv.core.recording.RemoteRecorderException.Kind.REFUSED -> stringResource(R.string.settings_recorder_err_refused, f.detail.orEmpty())
+            tv.own.owntv.core.recording.RemoteRecorderException.Kind.BAD_RESPONSE -> stringResource(R.string.settings_recorder_err_bad_response)
+        }
+        tv.own.owntv.ui.stage.StageNotice(
+            title = stringResource(R.string.dvr_play_failed_title),
+            body = stringResource(R.string.dvr_play_failed_message, f.title, why),
+            onDismiss = { vm.clearPlayFailed() },
         )
     }
 
