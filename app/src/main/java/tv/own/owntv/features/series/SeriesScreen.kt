@@ -501,14 +501,10 @@ private fun SeriesGrid(
     val panelShares = rememberPanelShares(PanelSection.SERIES, settingsVm)
     val cinematicSheetPct by settingsVm.cinematicSheetWidth(PanelSection.SERIES).collectAsStateWithLifecycle()
     val selectedMeta = selectedSeriesMeta?.takeIf { it.seriesId == selectedSeries?.id }?.cache
-    // (DPTV v2.9.26) The provider's own details once focus rests on a show, for what TMDB lacks.
-    val selectedProvider by androidx.compose.runtime.produceState<tv.own.owntv.core.repository.ProviderDetailsRepository.Series?>(null, selectedSeries?.id) {
-        value = null
-        val s = selectedSeries ?: return@produceState
-        kotlinx.coroutines.delay(tv.own.owntv.features.shell.components.PROVIDER_DETAILS_DWELL_MS)
-        value = vm.providerSeries(s)
-    }
-    val titleInfo = selectedSeries?.let { seriesTitleInfo(it, selectedMeta, metadataMode.tmdbWins).withProvider(selectedProvider?.details) }
+    // (DPTV v2.9.28) No provider request while browsing: get_series_info is a call to the provider for
+    // every show, and fetching it as focus moved through a grid got accounts rate-limited (HTTP 460 on
+    // live TV). The provider's details are asked for only when a show is opened (page, details, menu).
+    val titleInfo = selectedSeries?.let { seriesTitleInfo(it, selectedMeta, metadataMode.tmdbWins) }
     val (categoryEntries, groupsHeading) = vodCategoryEntries(railItems, railCounts, playlistMarks, series = true)
     val headerLabel = if (selectedItem?.key is LiveKey.Folder || selectedItem?.key is LiveKey.Custom) ProviderTags.parse(selectedLabel).name else selectedLabel
 

@@ -461,14 +461,8 @@ fun MoviesScreen(
     val panelShares = rememberPanelShares(PanelSection.MOVIES, settingsVm)
     val cinematicSheetPct by settingsVm.cinematicSheetWidth(PanelSection.MOVIES).collectAsStateWithLifecycle()
     val selectedMeta = selectedMovieMeta?.takeIf { it.movieId == selectedMovie?.id }?.cache
-    // (DPTV v2.9.26) The provider's own details once focus rests on a film, for what TMDB lacks.
-    val selectedProvider by androidx.compose.runtime.produceState<tv.own.owntv.core.parser.XtTitleDetails?>(null, selectedMovie?.id) {
-        value = null
-        val m = selectedMovie ?: return@produceState
-        kotlinx.coroutines.delay(tv.own.owntv.features.shell.components.PROVIDER_DETAILS_DWELL_MS)
-        value = vm.providerDetails(m)
-    }
-    val titleInfo = selectedMovie?.let { movieTitleInfo(it, selectedMeta, metadataMode.tmdbWins).withProvider(selectedProvider) }
+    // (DPTV v2.9.28) No provider request while browsing (see SeriesScreen): only when a film's details open.
+    val titleInfo = selectedMovie?.let { movieTitleInfo(it, selectedMeta, metadataMode.tmdbWins) }
     val (categoryEntries, groupsHeading) = vodCategoryEntries(railItems, railCounts, playlistMarks, series = false)
     val headerLabel = if (selectedItem?.key is LiveKey.Folder || selectedItem?.key is LiveKey.Custom) ProviderTags.parse(selectedLabel).name else selectedLabel
 
