@@ -72,9 +72,13 @@ object LiveStreamQuirks {
      * twenty seconds with zero dropped frames, then burned all eight reconnects on `407` in six
      * seconds and gave up. The stream was never the problem: the previous socket had not finished
      * closing. Waiting once is the answer here exactly as it is for `458`.
+     *
+     * (DPTV v2.9.28) `460` is the same answer from another panel: it refuses the next channel while
+     * the one just left is still counted against a one-connection line. v2.9.27 made it a hard stop,
+     * which turned every quick channel change into an error; it now waits for the session like `458`.
      */
     fun isSessionLimit(responseCode: Int): Boolean =
-        responseCode == 458 || responseCode == PlayerErrors.HTTP_PROXY_AUTH
+        responseCode == 458 || responseCode == 460 || responseCode == PlayerErrors.HTTP_PROXY_AUTH
 
     /**
      * Statuses a WAF uses to refuse a request on *who is asking* rather than what was asked for — worth
