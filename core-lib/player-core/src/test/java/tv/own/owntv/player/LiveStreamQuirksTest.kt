@@ -311,6 +311,8 @@ class LiveStreamQuirksTest {
         assertTrue(LiveStreamQuirks.isSessionLimit(458))
         assertFalse(LiveStreamQuirks.isSessionLimit(403))
         assertFalse(LiveStreamQuirks.isSessionLimit(459))
+        assertTrue(LiveStreamQuirks.isSessionLimit(460))
+        assertFalse(LiveStreamQuirks.isSessionLimit(461))
         assertFalse(LiveStreamQuirks.isSessionLimit(200))
         assertFalse(LiveStreamQuirks.isEdgeRefusal(458))
     }
