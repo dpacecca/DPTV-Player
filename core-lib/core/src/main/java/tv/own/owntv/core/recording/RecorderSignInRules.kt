@@ -49,6 +49,12 @@ object RecorderSignInRules {
         RemoteRecordings.normalizeBaseUrl(info.optString("dptv_recorder_url", ""))
     }.getOrNull()
 
+    /** (DPTV v2.9.27) The same recorder's home-network address DPTV-Server advertises; null when none. */
+    fun advertisedLocalRecorder(playerApiAnswer: String): String? = runCatching {
+        val info = JSONObject(playerApiAnswer).optJSONObject("server_info") ?: return null
+        RemoteRecordings.normalizeBaseUrl(info.optString("dptv_recorder_local_url", ""))
+    }.getOrNull()
+
     fun requestBody(username: String, password: String, device: String): String =
         JSONObject().put("username", username).put("password", password).put("device", device).toString()
 

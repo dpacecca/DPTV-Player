@@ -57,4 +57,13 @@ class RecorderSignInRulesTest {
         assertEquals("NVIDIA SHIELD (a1b2c3)", RecorderSignInRules.deviceName("NVIDIA SHIELD", "a1b2c3d4e5"))
         assertEquals("Android TV", RecorderSignInRules.deviceName(" ", ""))
     }
+
+    @Test
+    fun `the home address is read beside the public one`() {
+        val answer = """{"server_info":{"dptv_recorder_url":"https://dptvr.example.com","dptv_recorder_local_url":"http://192.168.1.10:3000/"}}"""
+        assertEquals("https://dptvr.example.com", RecorderSignInRules.advertisedRecorder(answer))
+        assertEquals("http://192.168.1.10:3000", RecorderSignInRules.advertisedLocalRecorder(answer))
+        assertEquals(null, RecorderSignInRules.advertisedLocalRecorder("""{"server_info":{"dptv_recorder_url":"https://dptvr.example.com"}}"""))
+        assertEquals(null, RecorderSignInRules.advertisedLocalRecorder("not json"))
+    }
 }

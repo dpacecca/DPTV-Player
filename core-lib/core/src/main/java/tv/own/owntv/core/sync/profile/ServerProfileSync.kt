@@ -111,7 +111,10 @@ class ServerProfileSync(
         val username = source.username.orEmpty()
         val password = source.password.orEmpty()
         if (username.isEmpty() || password.isEmpty()) return
-        val advertised = RecorderSignInRules.advertisedRecorder(http.getText(xtream.actionUrl(source, ""), source.userAgent))
+        val answer = http.getText(xtream.actionUrl(source, ""), source.userAgent)
+        val advertised = RecorderSignInRules.advertisedRecorder(answer)
+        // (DPTV v2.9.27) The recorder's home address, tried first whenever it answers (RemoteRecorder.config).
+        settings.setRecorderLocalUrl(RecorderSignInRules.advertisedLocalRecorder(answer)?.takeIf { advertised != null }.orEmpty())
         val signedInAs = advertised?.let { RecorderSignInRules.signedInAs(it, username, source.id) }
         when (RecorderSignInRules.step(origin, advertised, signedInAs)) {
             RecorderSignInRules.Step.KEEP -> return

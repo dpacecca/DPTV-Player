@@ -493,6 +493,8 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         // and RECORDER_SET_BY_HAND then keeps the automatic sign-in away for good.
         val RECORDER_SIGNED_IN_AS = stringPreferencesKey("recorder_signed_in_as")
         val RECORDER_SET_BY_HAND = booleanPreferencesKey("recorder_set_by_hand")
+        // (DPTV v2.9.27) The same recorder's address on the home network, from DPTV-Server: tried first.
+        val RECORDER_LOCAL_URL = stringPreferencesKey("recorder_local_url")
         // Video Player Settings
         val HW_DECODING = booleanPreferencesKey("hw_decoding")
         val SOFTWARE_DECODE_ABOVE_1080P = booleanPreferencesKey("software_decode_above_1080p")
@@ -2759,8 +2761,21 @@ class SettingsRepository(private val context: Context, private val localeStore: 
             it[Keys.RECORDER_SERVER_URL] = url.trim()
             it[Keys.RECORDER_SET_BY_HAND] = true
             it.remove(Keys.RECORDER_SIGNED_IN_AS)
+            // An address typed in is the one to use: no home address from DPTV-Server beside it.
+            it.remove(Keys.RECORDER_LOCAL_URL)
         }
     }
+
+    /**
+     * (DPTV v2.9.27) The recorder's home-network address DPTV-Server advertises beside its public one;
+     * blank = none. Not a choice made in Settings, so it never marks the recorder as set by hand.
+     */
+    suspend fun setRecorderLocalUrl(url: String) {
+        context.dataStore.edit {
+            if (url.isBlank()) it.remove(Keys.RECORDER_LOCAL_URL) else it[Keys.RECORDER_LOCAL_URL] = url.trim()
+        }
+    }
+    suspend fun currentRecorderLocalUrl(): String = context.dataStore.data.first()[Keys.RECORDER_LOCAL_URL] ?: ""
     suspend fun currentRecorderServerUrl(): String = context.dataStore.data.first()[Keys.RECORDER_SERVER_URL] ?: ""
 
     /** The API key generated in the server's Settings → Account → API keys. A secret: never backed up. */

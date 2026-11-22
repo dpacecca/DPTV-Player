@@ -37,7 +37,36 @@ class RemoteRecorder(
     suspend fun config(): Config? {
         val url = RemoteRecordings.normalizeBaseUrl(settings.currentRecorderServerUrl()) ?: return null
         val key = settings.currentRecorderApiKey().trim()
-        return if (key.isEmpty()) null else Config(url, key)
+        if (key.isEmpty()) return null
+        // (DPTV v2.9.27) The home address DPTV-Server gave beside the public one, while it answers.
+        val local = RemoteRecordings.normalizeBaseUrl(settings.currentRecorderLocalUrl())
+        return Config(if (local != null && local != url && reachable(local)) local else url, key)
+    }
+
+    @Volatile private var probed: Pair<String, Pair<Long, Boolean>>? = null
+
+    /**
+     * Whether the recorder answers at [base] (its unauthenticated `/api/version`), asked at most once a
+     * minute and given [PROBE_TIMEOUT_MS]: at home it does, away from home it is unreachable and the
+     * public address is used instead.
+     */
+    private suspend fun reachable(base: String): Boolean {
+        val now = System.currentTimeMillis()
+        probed?.takeIf { it.first == base && now - it.second.first < PROBE_EVERY_MS }?.let { return it.second.second }
+        val ok = withContext(Dispatchers.IO) {
+            runCatching {
+                probeClient.newCall(Request.Builder().url(base + VERSION_PATH).get().build()).execute().use { it.isSuccessful }
+            }.getOrDefault(false)
+        }
+        probed = base to (now to ok)
+        return ok
+    }
+
+    private val probeClient: OkHttpClient by lazy {
+        client.newBuilder()
+            .connectTimeout(PROBE_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS)
+            .callTimeout(PROBE_TIMEOUT_MS * 2, java.util.concurrent.TimeUnit.MILLISECONDS)
+            .build()
     }
 
     /** Check the address and key: the number of recordings the server lists for this key's user. */
@@ -121,6 +150,9 @@ class RemoteRecorder(
 
     private companion object {
         val JSON = "application/json; charset=utf-8".toMediaType()
+        const val VERSION_PATH = "/api/version"
+        const val PROBE_EVERY_MS = 60_000L
+        const val PROBE_TIMEOUT_MS = 1_500L
     }
 }
 
