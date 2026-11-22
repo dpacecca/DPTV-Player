@@ -2,6 +2,7 @@
 
 package tv.own.owntv.features.series
 
+import tv.own.owntv.features.shell.components.withProvider
 import tv.own.owntv.ui.stage.backdropLeftWash
 import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.foundation.layout.heightIn
@@ -500,7 +501,14 @@ private fun SeriesGrid(
     val panelShares = rememberPanelShares(PanelSection.SERIES, settingsVm)
     val cinematicSheetPct by settingsVm.cinematicSheetWidth(PanelSection.SERIES).collectAsStateWithLifecycle()
     val selectedMeta = selectedSeriesMeta?.takeIf { it.seriesId == selectedSeries?.id }?.cache
-    val titleInfo = selectedSeries?.let { seriesTitleInfo(it, selectedMeta, metadataMode.tmdbWins) }
+    // (DPTV v2.9.26) The provider's own details once focus rests on a show, for what TMDB lacks.
+    val selectedProvider by androidx.compose.runtime.produceState<tv.own.owntv.core.repository.ProviderDetailsRepository.Series?>(null, selectedSeries?.id) {
+        value = null
+        val s = selectedSeries ?: return@produceState
+        kotlinx.coroutines.delay(tv.own.owntv.features.shell.components.PROVIDER_DETAILS_DWELL_MS)
+        value = vm.providerSeries(s)
+    }
+    val titleInfo = selectedSeries?.let { seriesTitleInfo(it, selectedMeta, metadataMode.tmdbWins).withProvider(selectedProvider?.details) }
     val (categoryEntries, groupsHeading) = vodCategoryEntries(railItems, railCounts, playlistMarks, series = true)
     val headerLabel = if (selectedItem?.key is LiveKey.Folder || selectedItem?.key is LiveKey.Custom) ProviderTags.parse(selectedLabel).name else selectedLabel
 
@@ -929,7 +937,9 @@ private fun SeriesGrid(
     // Long-press (or the remote's Menu key) on a series → ☰ Title options (P5-12).
     contextSeries?.let { s ->
         val cacheForS = selectedSeriesMeta?.takeIf { it.seriesId == s.id }?.cache
-        val trailerKey = if (metadataMode.enrich) cacheForS?.trailerKey else null
+        // (DPTV v2.9.26) The provider's own trailer when TMDB has none.
+        val providerForS by androidx.compose.runtime.produceState<tv.own.owntv.core.repository.ProviderDetailsRepository.Series?>(null, s.id) { value = vm.providerSeries(s) }
+        val trailerKey = (if (metadataMode.enrich) cacheForS?.trailerKey else null) ?: providerForS?.details?.trailerKey
         val inHistory by androidx.compose.runtime.produceState(selectedKey == LiveKey.History, s.id) { value = vm.isInHistory(s) }
         val canMove = selectedKey is LiveKey.Folder || selectedKey is LiveKey.Custom || selectedKey == LiveKey.Favorites
         val actions = buildList {
@@ -1035,8 +1045,9 @@ private fun SeriesGrid(
     }
     detailsSeries?.let { s ->
         val cache = selectedSeriesMeta?.takeIf { it.seriesId == s.id }?.cache
+        val providerForDetails by androidx.compose.runtime.produceState<tv.own.owntv.core.repository.ProviderDetailsRepository.Series?>(null, s.id) { value = vm.providerSeries(s) }
         tv.own.owntv.features.shell.components.MediaDetailsScreen(
-            details = buildSeriesDetails(s, cache, metadataMode.tmdbWins),
+            details = buildSeriesDetails(s, cache, metadataMode.tmdbWins).withProvider(providerForDetails?.details),
             onExit = { detailsSeries = null },
         )
     }
@@ -1293,7 +1304,9 @@ private fun EpisodeView(
     // from Home or a Continue pill never focused it in the grid.
     LaunchedEffect(series.id) { vm.onSeriesFocused(series) }
     val seriesMeta = selectedSeriesMeta?.takeIf { it.seriesId == series.id }?.cache
-    val info = seriesTitleInfo(series, seriesMeta, metadataMode.tmdbWins)
+    // (DPTV v2.9.26) The provider's own details and season names for the open show.
+    val provider by androidx.compose.runtime.produceState<tv.own.owntv.core.repository.ProviderDetailsRepository.Series?>(null, series.id) { value = vm.providerSeries(series) }
+    val info = seriesTitleInfo(series, seriesMeta, metadataMode.tmdbWins).withProvider(provider?.details)
     val categoryName = series.categoryId
         ?.let { id -> railItems.firstOrNull { it.key == LiveKey.Folder(id) } }
         ?.let { ProviderTags.parse(it.displayLabel(R.string.content_category_all_series)).name }
@@ -1520,7 +1533,9 @@ private fun EpisodeView(
             ) {
                 items(seasons, key = { it }) { season ->
                     tv.own.owntv.ui.stage.StageTab(
-                        label = if (season == 0) stringResource(R.string.content_season_specials) else stringResource(R.string.content_season, season),
+                        // (DPTV v2.9.26) The provider's own name for the season, where it gives one.
+                        label = provider?.seasons?.get(season)?.name
+                            ?: if (season == 0) stringResource(R.string.content_season_specials) else stringResource(R.string.content_season, season),
                         count = localizedInteger(episodes.count { it.seasonNumber == season }, grouping = false),
                         selected = season == activeSeason,
                         onClick = { vm.selectSeason(season) },
@@ -1842,7 +1857,7 @@ private fun EpisodeView(
     }
     if (showSeriesDetails) {
         tv.own.owntv.features.shell.components.MediaDetailsScreen(
-            details = buildSeriesDetails(series, seriesMeta, metadataMode.tmdbWins),
+            details = buildSeriesDetails(series, seriesMeta, metadataMode.tmdbWins).withProvider(provider?.details),
             onExit = { showSeriesDetails = false },
         )
     }

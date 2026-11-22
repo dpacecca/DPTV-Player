@@ -2,6 +2,7 @@
 
 package tv.own.owntv.features.movies
 
+import tv.own.owntv.features.shell.components.withProvider
 import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.CompositionLocalProvider
@@ -460,7 +461,14 @@ fun MoviesScreen(
     val panelShares = rememberPanelShares(PanelSection.MOVIES, settingsVm)
     val cinematicSheetPct by settingsVm.cinematicSheetWidth(PanelSection.MOVIES).collectAsStateWithLifecycle()
     val selectedMeta = selectedMovieMeta?.takeIf { it.movieId == selectedMovie?.id }?.cache
-    val titleInfo = selectedMovie?.let { movieTitleInfo(it, selectedMeta, metadataMode.tmdbWins) }
+    // (DPTV v2.9.26) The provider's own details once focus rests on a film, for what TMDB lacks.
+    val selectedProvider by androidx.compose.runtime.produceState<tv.own.owntv.core.parser.XtTitleDetails?>(null, selectedMovie?.id) {
+        value = null
+        val m = selectedMovie ?: return@produceState
+        kotlinx.coroutines.delay(tv.own.owntv.features.shell.components.PROVIDER_DETAILS_DWELL_MS)
+        value = vm.providerDetails(m)
+    }
+    val titleInfo = selectedMovie?.let { movieTitleInfo(it, selectedMeta, metadataMode.tmdbWins).withProvider(selectedProvider) }
     val (categoryEntries, groupsHeading) = vodCategoryEntries(railItems, railCounts, playlistMarks, series = false)
     val headerLabel = if (selectedItem?.key is LiveKey.Folder || selectedItem?.key is LiveKey.Custom) ProviderTags.parse(selectedLabel).name else selectedLabel
 
@@ -914,7 +922,9 @@ fun MoviesScreen(
         // Movie details only when enrichment is on AND a confident match resolved for THIS movie.
         val cacheForM = selectedMovieMeta?.takeIf { it.movieId == m.id }?.cache
         val watched = selectedProgress?.takeIf { selectedMovie?.id == m.id }?.let { vm.isMovieCompleted(it) } ?: false
-        val trailerKey = if (metadataMode.enrich) cacheForM?.trailerKey else null
+        // (DPTV v2.9.26) The provider's own trailer when TMDB has none.
+        val providerForM by androidx.compose.runtime.produceState<tv.own.owntv.core.parser.XtTitleDetails?>(null, m.id) { value = vm.providerDetails(m) }
+        val trailerKey = (if (metadataMode.enrich) cacheForM?.trailerKey else null) ?: providerForM?.trailerKey
         val inHistory by androidx.compose.runtime.produceState(selectedKey == LiveKey.History, m.id) { value = vm.isInHistory(m) }
         val canMove = selectedKey is LiveKey.Folder || selectedKey is LiveKey.Custom || selectedKey == LiveKey.Favorites
         val actions = buildList {
@@ -1058,8 +1068,9 @@ fun MoviesScreen(
     // Windowed TMDB details popup (§11.1) — read-only, Back exits.
     detailsMovie?.let { m ->
         val cache = selectedMovieMeta?.takeIf { it.movieId == m.id }?.cache
+        val providerForDetails by androidx.compose.runtime.produceState<tv.own.owntv.core.parser.XtTitleDetails?>(null, m.id) { value = vm.providerDetails(m) }
         MediaDetailsScreen(
-            details = buildMovieDetails(m, cache, metadataMode.tmdbWins),
+            details = buildMovieDetails(m, cache, metadataMode.tmdbWins).withProvider(providerForDetails),
             onExit = { detailsMovie = null },
         )
     }

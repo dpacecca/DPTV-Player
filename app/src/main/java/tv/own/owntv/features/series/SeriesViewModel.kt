@@ -108,7 +108,13 @@ class SeriesViewModel(
     private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
     private val streamUrlResolver: tv.own.owntv.core.stalker.StreamUrlResolver,
     private val subtitleController: tv.own.owntv.core.subtitles.SubtitleController,
+    private val providerDetailsRepo: tv.own.owntv.core.repository.ProviderDetailsRepository,
 ) : ViewModel() {
+
+    /** (DPTV v2.9.26) The provider's own details and seasons of [series], or null. */
+    suspend fun providerSeries(series: SeriesEntity): tv.own.owntv.core.repository.ProviderDetailsRepository.Series? =
+        providerDetailsRepo.series(series)
+
 
     /** The categories' search text, held here so it survives the player (see LiveViewModel). */
     private val _categoryQuery = kotlinx.coroutines.flow.MutableStateFlow("")

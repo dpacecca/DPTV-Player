@@ -41,7 +41,35 @@ data class XtEpisode(
     /** (DPTV v2.9.25) Its running time in seconds, from `info.duration_secs` (or `info.duration`). */
     val durationSecs: Int? = null,
 )
-data class XtSeriesInfo(val episodes: List<XtEpisode>)
+data class XtSeriesInfo(
+    val episodes: List<XtEpisode>,
+    /** (DPTV v2.9.26) The show's own details from the panel's `info`, when it sends any. */
+    val details: XtTitleDetails? = null,
+    /** (DPTV v2.9.26) The panel's `seasons` list: each season's name, synopsis and cover. */
+    val seasons: List<XtSeasonInfo> = emptyList(),
+)
+
+/**
+ * (DPTV v2.9.26) A film's or show's details as the provider gives them (`get_vod_info` / `get_series_info`
+ * `info`): the fallback for what TMDB does not know or when it is off. Every part is optional.
+ */
+data class XtTitleDetails(
+    val genres: List<String> = emptyList(),
+    val cast: List<String> = emptyList(),
+    val director: String? = null,
+    val backdropUrl: String? = null,
+    /** A YouTube video id, from the panel's `youtube_trailer` (an id or a link). */
+    val trailerKey: String? = null,
+    val runtimeSecs: Int? = null,
+    val year: Int? = null,
+    val plot: String? = null,
+) {
+    val isEmpty: Boolean get() = genres.isEmpty() && cast.isEmpty() && director == null && backdropUrl == null &&
+        trailerKey == null && runtimeSecs == null && year == null && plot == null
+}
+
+/** (DPTV v2.9.26) One entry of a panel's `seasons` list. */
+data class XtSeasonInfo(val number: Int, val name: String?, val overview: String?, val coverUrl: String?)
 
 /**
  * An episode whose `episode_num` the panel left blank (or 0) takes its position within its season
@@ -239,33 +267,187 @@ class XtreamClient(private val http: HttpClient) {
     suspend fun getSeriesInfo(s: SourceEntity, seriesId: String): XtSeriesInfo {
         // One retry: a panel that drops a kept-alive connection answers the first request with
         // "unexpected end of stream", and a single miss here shows the user an empty show.
-        val episodes = http.get(
+        val info = http.get(
             api(s, "get_series_info", "&series_id=$seriesId"), s.userAgent, maxAttempts = SERIES_INFO_MAX_ATTEMPTS,
-        ) { input -> readSeriesInfoEpisodes(input) }
-        return XtSeriesInfo(numberBlankEpisodes(episodes))
+        ) { input -> readSeriesInfo(input) }
+        return info.copy(episodes = numberBlankEpisodes(info.episodes))
     }
 
-    /** The episodes of a `get_series_info` body, in panel order. */
-    internal fun readSeriesInfoEpisodes(input: InputStream): List<XtEpisode> {
-        val episodes = ArrayList<XtEpisode>()
+    /** (DPTV v2.9.26) A film's details from `get_vod_info`; null when the panel says nothing useful. */
+    suspend fun getVodInfo(s: SourceEntity, vodId: String): XtTitleDetails? =
+        http.get(api(s, "get_vod_info", "&vod_id=$vodId"), s.userAgent) { input -> readVodInfo(input) }
+
+    /** The `info` object of a `get_vod_info` body. */
+    internal fun readVodInfo(input: InputStream): XtTitleDetails? {
+        var details: XtTitleDetails? = null
         JsonReader(input.reader(Charsets.UTF_8)).use { reader ->
             reader.isLenient = true
             if (reader.peek() != JsonToken.BEGIN_OBJECT) { reader.skipValue(); return@use }
             reader.beginObject()
             while (reader.hasNext()) {
-                if (reader.nextName() == "episodes") {
-                    when (reader.peek()) {
+                if (reader.nextName() == "info") details = readTitleDetails(reader) else reader.skipValue()
+            }
+            reader.endObject()
+        }
+        return details?.takeUnless { it.isEmpty }
+    }
+
+    /** The episodes of a `get_series_info` body, in panel order. */
+    internal fun readSeriesInfoEpisodes(input: InputStream): List<XtEpisode> = readSeriesInfo(input).episodes
+
+    /** A whole `get_series_info` body: its episodes in panel order, and (v2.9.26) the show's info and seasons. */
+    internal fun readSeriesInfo(input: InputStream): XtSeriesInfo {
+        val episodes = ArrayList<XtEpisode>()
+        var details: XtTitleDetails? = null
+        var seasons: List<XtSeasonInfo> = emptyList()
+        JsonReader(input.reader(Charsets.UTF_8)).use { reader ->
+            reader.isLenient = true
+            if (reader.peek() != JsonToken.BEGIN_OBJECT) { reader.skipValue(); return@use }
+            reader.beginObject()
+            while (reader.hasNext()) {
+                when (reader.nextName()) {
+                    "episodes" -> when (reader.peek()) {
                         JsonToken.BEGIN_OBJECT -> readEpisodesObject(reader, episodes) // { "1": [ep,…], … }
                         JsonToken.BEGIN_ARRAY -> readEpisodesArray(reader, episodes)    // [ ep, ep, … ]
                         else -> reader.skipValue()
                     }
-                } else {
-                    reader.skipValue()
+                    "info" -> details = readTitleDetails(reader)
+                    "seasons" -> seasons = readSeasons(reader)
+                    else -> reader.skipValue()
                 }
             }
             reader.endObject()
         }
-        return episodes
+        return XtSeriesInfo(episodes, details?.takeUnless { it.isEmpty }, seasons)
+    }
+
+    /**
+     * A title's `info` object (v2.9.26). Panels name things differently, so several keys feed each
+     * part; lists ("Drama, Crime") are split, a trailer link is reduced to its YouTube id, and every
+     * value is read whichever key wins, so the reader never stops on an unread value.
+     */
+    private fun readTitleDetails(reader: JsonReader): XtTitleDetails? {
+        if (reader.peek() != JsonToken.BEGIN_OBJECT) { reader.skipValue(); return null }
+        var genres: List<String> = emptyList()
+        var cast: List<String> = emptyList()
+        var director: String? = null
+        var backdrop: String? = null
+        var trailer: String? = null
+        var secs: Int? = null
+        var minutes: Int? = null
+        var clock: Int? = null
+        var year: Int? = null
+        var plot: String? = null
+        reader.beginObject()
+        while (reader.hasNext()) {
+            when (reader.nextName()) {
+                "genre", "genres" -> {
+                    val v = splitList(reader.nextStringOrNull())
+                    if (genres.isEmpty()) genres = v
+                }
+                "cast", "actors" -> {
+                    val v = splitList(reader.nextStringOrNull())
+                    if (cast.isEmpty()) cast = v
+                }
+                "director" -> {
+                    val v = cleanText(reader.nextStringOrNull())
+                    if (director == null) director = v
+                }
+                "backdrop_path", "backdrop" -> {
+                    val v = readFirstUrl(reader)
+                    if (backdrop == null) backdrop = v
+                }
+                "youtube_trailer", "trailer" -> {
+                    val v = youtubeId(reader.nextStringOrNull())
+                    if (trailer == null) trailer = v
+                }
+                "duration_secs" -> {
+                    val v = reader.nextIntOrNull()?.takeIf { it > 0 }
+                    if (secs == null) secs = v
+                }
+                "episode_run_time", "runtime" -> {
+                    val v = reader.nextIntOrNull()?.takeIf { it > 0 }
+                    if (minutes == null) minutes = v
+                }
+                "duration" -> {
+                    val v = parseClockDuration(reader.nextStringOrNull())
+                    if (clock == null) clock = v
+                }
+                "releaseDate", "release_date", "releasedate", "year" -> {
+                    val v = reader.nextStringOrNull()?.trim()?.take(4)?.toIntOrNull()?.takeIf { it in 1870..2100 }
+                    if (year == null) year = v
+                }
+                "plot", "description", "overview" -> {
+                    val v = cleanText(reader.nextStringOrNull())
+                    if (plot == null) plot = v
+                }
+                else -> reader.skipValue()
+            }
+        }
+        reader.endObject()
+        return XtTitleDetails(genres, cast, director, backdrop, trailer, secs ?: clock ?: minutes?.times(60), year, plot)
+    }
+
+    /** A panel's `seasons` array (v2.9.26); anything else reads as none. */
+    private fun readSeasons(reader: JsonReader): List<XtSeasonInfo> {
+        if (reader.peek() != JsonToken.BEGIN_ARRAY) { reader.skipValue(); return emptyList() }
+        val out = ArrayList<XtSeasonInfo>()
+        reader.beginArray()
+        while (reader.hasNext()) {
+            if (reader.peek() != JsonToken.BEGIN_OBJECT) { reader.skipValue(); continue }
+            var number: Int? = null
+            var name: String? = null
+            var overview: String? = null
+            var cover: String? = null
+            reader.beginObject()
+            while (reader.hasNext()) {
+                when (reader.nextName()) {
+                    "season_number" -> number = reader.nextIntOrNull()
+                    "name" -> name = cleanText(reader.nextStringOrNull())
+                    "overview" -> overview = cleanText(reader.nextStringOrNull())
+                    "cover_big", "cover", "cover_tmdb" -> {
+                        val v = cleanUrl(reader.nextStringOrNull())
+                        if (cover == null) cover = v
+                    }
+                    else -> reader.skipValue()
+                }
+            }
+            reader.endObject()
+            number?.takeIf { it >= 0 }?.let { out.add(XtSeasonInfo(it, name, overview, cover)) }
+        }
+        reader.endArray()
+        return out
+    }
+
+    /** A string or the first string of an array, as an http(s) link; anything else reads as none. */
+    private fun readFirstUrl(reader: JsonReader): String? = when (reader.peek()) {
+        JsonToken.BEGIN_ARRAY -> {
+            var first: String? = null
+            reader.beginArray()
+            while (reader.hasNext()) {
+                val v = cleanUrl(reader.nextStringOrNull())
+                if (first == null) first = v
+            }
+            reader.endArray()
+            first
+        }
+        else -> cleanUrl(reader.nextStringOrNull())
+    }
+
+    private fun cleanText(raw: String?): String? = raw?.trim()?.takeIf { it.isNotEmpty() }
+
+    private fun cleanUrl(raw: String?): String? =
+        raw?.trim()?.takeIf { it.startsWith(HttpScheme, ignoreCase = true) }
+
+    /** "Drama, Crime / Thriller" → its parts, trimmed, without blanks or repeats. */
+    private fun splitList(raw: String?): List<String> =
+        raw?.split(listSeparators)?.map { it.trim() }?.filter { it.isNotEmpty() }?.distinct().orEmpty()
+
+    /** A YouTube video id from a bare id or a watch / youtu.be / embed link. */
+    internal fun youtubeId(raw: String?): String? {
+        val text = raw?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        if (youtubeIdPattern.matches(text)) return text
+        return youtubeLinkPattern.find(text)?.groupValues?.get(1)
     }
 
     /** `episodes` as `{ season → [episodes] }`. */
@@ -1054,6 +1236,10 @@ class XtreamClient(private val http: HttpClient) {
         const val CATEGORY_MAX_ATTEMPTS = 3
         /** A show's episode list — see [getSeriesInfo]. */
         const val SERIES_INFO_MAX_ATTEMPTS = 2
+        private const val HttpScheme = "http"
+        private val listSeparators = Regex("[,/|]")
+        private val youtubeIdPattern = Regex("[A-Za-z0-9_-]{11}")
+        private val youtubeLinkPattern = Regex("(?:v=|youtu\\.be/|embed/)([A-Za-z0-9_-]{11})")
         /** Enough of an HLS response to see `#EXTM3U` (or that an HTML error page came instead). */
         const val HLS_PROBE_BYTES = 512
     }

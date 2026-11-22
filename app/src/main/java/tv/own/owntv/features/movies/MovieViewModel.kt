@@ -102,7 +102,12 @@ class MovieViewModel(
     private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
     private val streamUrlResolver: tv.own.owntv.core.stalker.StreamUrlResolver,
     private val subtitleController: tv.own.owntv.core.subtitles.SubtitleController,
+    private val providerDetailsRepo: tv.own.owntv.core.repository.ProviderDetailsRepository,
 ) : ViewModel() {
+
+    /** (DPTV v2.9.26) The provider's own details of [movie] (genres, cast, trailer…), or null. */
+    suspend fun providerDetails(movie: MovieEntity): tv.own.owntv.core.parser.XtTitleDetails? = providerDetailsRepo.movie(movie)
+
 
     /** The categories' search text, held here so it survives the player (see LiveViewModel). */
     private val _categoryQuery = kotlinx.coroutines.flow.MutableStateFlow("")
