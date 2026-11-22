@@ -2806,6 +2806,8 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	&series_id=$seriesId
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	&stream_id=$streamId
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	&stream_id=$streamId&limit=$limit
+1	url	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	&vod_id=$vodId
+1	regex	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	(?:v=|youtu\\.be/|embed/)([A-Za-z0-9_-]{11})
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	0
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	1
 1	technical	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	GMT$sign${(minutes / 60).toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}
@@ -2813,23 +2815,37 @@
 2	technical	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	UTC
 8	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	UTF-8
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	XtreamClient
+1	regex	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	[,/|]
+1	regex	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	[A-Za-z0-9_-]{11}
 1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	active_cons
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	actors
 3	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	added
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	air_date
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	airdate
 1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	auth
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	backdrop
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	backdrop_path
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	cast
 4	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	category_id
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	category_name
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	container_extension
-1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	cover
-2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	description
+2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	cover
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	cover_big
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	cover_tmdb
+5	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	description
 1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	direct_source
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	director
+2	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	duration
+2	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	duration_secs
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	epg_channel_id
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	epg_listings
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	episode_num
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	episode_run_time
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	episodes
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	exp_date
 1	log	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	firstLiveStreamId failed for source ${s.id}
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	genre
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	genres
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	get_live_categories
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	get_live_streams
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	get_series
@@ -2838,28 +2854,34 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	get_short_epg
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	get_simple_data_table
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	get_vod_categories
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	get_vod_info
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	get_vod_streams
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	has_archive
+1	url	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	http
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	id
-1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	info
+3	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	info
 1	log	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	isXtreamAccount: no (${e.message})
 1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	is_trial
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	last_modified
 1	technical	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	max_connections
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	mp4
-3	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	name
+4	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	name
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	num
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	objects
+3	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	overview
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	parseOrReadMs=$parseOrReadDelta callbackMs=$callbackDelta
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	parseOrReadMs=${metrics.parseOrReadMs} callbackMs=${metrics.callbackMs}
-2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	plot
+5	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	plot
 1	log	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	probeHls failed for source ${s.id}
 1	log	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	probeTsPlayable failed for source ${s.id}
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	rating
-2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	releaseDate
-2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	release_date
-2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	releasedate
+3	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	releaseDate
+3	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	release_date
+3	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	releasedate
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	runtime
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	season
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	season_number
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	seasons
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	series_id
 1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	server_info
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	start_timestamp
@@ -2878,10 +2900,12 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	totalMs=${SystemClock.elapsedRealtime() - startedAt}
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	totalMs=${now - startedAt}
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	totalParseOrReadMs=${metrics.parseOrReadMs} totalCallbackMs=${metrics.callbackMs}
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	trailer
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	tv_archive
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	tv_archive_duration
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	user_info
-1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	year
+2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	year
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	youtube_trailer
 1	technical	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	yyyy-MM-dd HH:mm:ss
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	yyyy-MM-dd:HH-mm
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	—
@@ -3328,6 +3352,8 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	stalker://
 1	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	windowBackH=${WINDOW_BACK_MS / 3_600_000} windowAheadH=${aheadMs / 3_600_000}
 1	technical	core/src/main/java/tv/own/owntv/core/repository/EpisodeMerge.kt	s${seasonNumber}e$episodeNumber
+1	log	core/src/main/java/tv/own/owntv/core/repository/ProviderDetailsRepository.kt	ProviderDetails
+1	log	core/src/main/java/tv/own/owntv/core/repository/ProviderDetailsRepository.kt	provider details failed sourceId=$sourceId: ${e.javaClass.simpleName}
 1	technical	core/src/main/java/tv/own/owntv/core/repository/SeriesRepository.kt	\0
 1	technical	core/src/main/java/tv/own/owntv/core/repository/SeriesRepository.kt	${season.id}:$epNo
 1	log	core/src/main/java/tv/own/owntv/core/repository/SeriesRepository.kt	${source.type} episode load failed seriesId=${series.id}

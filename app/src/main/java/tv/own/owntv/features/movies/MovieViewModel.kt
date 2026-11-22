@@ -2,6 +2,7 @@
 
 package tv.own.owntv.features.movies
 
+import org.koin.core.component.inject
 import tv.own.owntv.core.sync.calmDuringSync
 
 import android.util.Log
@@ -102,7 +103,14 @@ class MovieViewModel(
     private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
     private val streamUrlResolver: tv.own.owntv.core.stalker.StreamUrlResolver,
     private val subtitleController: tv.own.owntv.core.subtitles.SubtitleController,
-) : ViewModel() {
+) : ViewModel(), org.koin.core.component.KoinComponent {
+
+    // (DPTV v2.9.25) Looked up rather than injected: viewModelOf takes at most 22 constructor parameters.
+    private val providerDetailsRepo: tv.own.owntv.core.repository.ProviderDetailsRepository by inject()
+
+    /** (DPTV v2.9.26) The provider's own details of [movie] (genres, cast, trailer…), or null. */
+    suspend fun providerDetails(movie: MovieEntity): tv.own.owntv.core.parser.XtTitleDetails? = providerDetailsRepo.movie(movie)
+
 
     /** The categories' search text, held here so it survives the player (see LiveViewModel). */
     private val _categoryQuery = kotlinx.coroutines.flow.MutableStateFlow("")

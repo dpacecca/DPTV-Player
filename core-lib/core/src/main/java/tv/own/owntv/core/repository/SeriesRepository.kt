@@ -129,6 +129,8 @@ class SeriesRepository(
                 containerExt = e.containerExt,
                 remoteId = e.id,
                 airDateMs = e.airDateMs,
+                plot = e.plot,
+                durationSecs = e.durationSecs,
             )
         }
     }
