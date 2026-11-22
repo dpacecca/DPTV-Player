@@ -2,6 +2,7 @@
 
 package tv.own.owntv.features.series
 
+import org.koin.core.component.inject
 import tv.own.owntv.core.sync.calmDuringSync
 
 import android.util.Log
@@ -108,8 +109,10 @@ class SeriesViewModel(
     private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
     private val streamUrlResolver: tv.own.owntv.core.stalker.StreamUrlResolver,
     private val subtitleController: tv.own.owntv.core.subtitles.SubtitleController,
-    private val providerDetailsRepo: tv.own.owntv.core.repository.ProviderDetailsRepository,
-) : ViewModel() {
+) : ViewModel(), org.koin.core.component.KoinComponent {
+
+    // (DPTV v2.9.25) Looked up rather than injected: viewModelOf takes at most 22 constructor parameters.
+    private val providerDetailsRepo: tv.own.owntv.core.repository.ProviderDetailsRepository by inject()
 
     /** (DPTV v2.9.26) The provider's own details and seasons of [series], or null. */
     suspend fun providerSeries(series: SeriesEntity): tv.own.owntv.core.repository.ProviderDetailsRepository.Series? =
