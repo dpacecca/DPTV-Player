@@ -24,6 +24,3 @@ internal fun MediaDetailsUi.withProvider(p: XtTitleDetails?): MediaDetailsUi = i
     plot = plot?.takeIf { it.isNotBlank() } ?: p.plot,
     cast = cast.ifEmpty { p.cast.map { CastMember(it) } },
 )
-
-/** How long focus must rest on a title before its provider details are asked for (never while scrolling). */
-internal const val PROVIDER_DETAILS_DWELL_MS = 700L
