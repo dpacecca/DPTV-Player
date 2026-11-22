@@ -410,7 +410,7 @@ private fun BoxScope.Playhead(frac: Float) {
 }
 
 @Composable
-internal fun SeekBar(positionMs: Long, durationMs: Long, bufferedMs: Long, stepMs: Long, onSeek: (Long) -> Unit, focusRequester: FocusRequester? = null) {
+internal fun SeekBar(positionMs: Long, durationMs: Long, bufferedMs: Long, stepMs: Long, onSeek: (Long) -> Unit, focusRequester: FocusRequester? = null, forceThumb: Boolean = false) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     // Touch: where a finger is dragging the playhead, until it lets go and the seek lands.
@@ -420,7 +420,8 @@ internal fun SeekBar(positionMs: Long, durationMs: Long, bufferedMs: Long, stepM
     }
     val frac = dragFrac
         ?: if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
-    val showThumb = focused || dragFrac != null
+    // [forceThumb]: the scrub-only timeline (DPTV v2.9.24) shows the playhead and time left while unfocused.
+    val showThumb = focused || dragFrac != null || forceThumb
     val shownPositionMs = dragFrac?.let { (it * durationMs).toLong() } ?: positionMs
     // The buffer ghost: how far ahead the engine has data. Never behind the playhead, so a stale or
     // unreported value simply draws nothing rather than a stripe that contradicts the fill.
@@ -504,6 +505,8 @@ private fun Modifier.atFraction(fraction: Float): Modifier = layout { measurable
     layout(width, placeable.height) { placeable.place(x, 0) }
 }
 
+/** (DPTV v2.9.24) How long the scrub-only timeline of a recording or film stays up after the last ◀/▶. */
+internal const val SCRUB_BAR_MS = 3_000L
 internal const val LIVE_SCRUB_STEP_SEC = 60     // per Left/Right press (hold to scrub fast); buttons stay 30 s
 
 /** Scrubbable live timeline for a catch-up channel: spans the last [LIVE_WINDOW_SEC] up to the live edge.

@@ -569,7 +569,7 @@ private fun volumeIcon(volume: Int): OwnTVIcon = when {
 /** A film's seek bar and its two time caps — the only part of the dock that needs the position, so the
  *  only part that recomposes as it ticks (T14). */
 @Composable
-private fun VodTimeline(player: PlaybackEngine, position: () -> Long, duration: Long, seekFocus: FocusRequester?) {
+internal fun VodTimeline(player: PlaybackEngine, position: () -> Long, duration: Long, seekFocus: FocusRequester?, scrubbing: Boolean = false) {
     val seekStep by player.seekStepMs.collectAsStateWithLifecycle() // Settings -> Seek step
     val buffered by player.bufferedMs.collectAsStateWithLifecycle()
     val pos = position()
@@ -577,7 +577,7 @@ private fun VodTimeline(player: PlaybackEngine, position: () -> Long, duration: 
         TimeCap(formatTime(pos), Alignment.Start)
         Spacer(Modifier.width(12.dp))
         Box(Modifier.weight(1f)) {
-            SeekBar(positionMs = pos, durationMs = duration, bufferedMs = buffered, stepMs = seekStep, onSeek = { player.seekBy(it) }, focusRequester = seekFocus)
+            SeekBar(positionMs = pos, durationMs = duration, bufferedMs = buffered, stepMs = seekStep, onSeek = { player.seekBy(it) }, focusRequester = seekFocus, forceThumb = scrubbing)
         }
         Spacer(Modifier.width(12.dp))
         TimeCap(stringResource(R.string.player_time_remaining, formatTime((duration - pos).coerceAtLeast(0))), Alignment.End)
