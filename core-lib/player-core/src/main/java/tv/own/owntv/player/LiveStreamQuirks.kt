@@ -313,7 +313,16 @@ object LiveStreamQuirks {
      */
     fun isRequestRefusal(responseCode: Int): Boolean =
         responseCode == 401 || responseCode == 402 || responseCode == 403 || responseCode == 429 ||
-            responseCode == 503 || responseCode == 509 || isSessionLimit(responseCode)
+            responseCode == 503 || responseCode == 509 || isSessionLimit(responseCode) ||
+            isPanelRefusalCode(responseCode)
+
+    /**
+     * (DPTV v2.9.27) The non-standard 450-499 codes Xtream panels invent for refusing an account
+     * (blocked, rate-limited, over its connections). Traced on a panel answering `460`: read as a format
+     * failure, the player swapped `.ts` and `.m3u8` and asked again every one to three seconds, which
+     * kept a rate-limited account blocked. A refusal is never fixed by another file extension.
+     */
+    fun isPanelRefusalCode(responseCode: Int): Boolean = responseCode in 450..499
 
     /**
      * Record that this channel refused its own signed segment URLs, so it reopens straight on mpv

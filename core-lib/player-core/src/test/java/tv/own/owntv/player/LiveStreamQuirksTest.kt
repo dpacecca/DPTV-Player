@@ -403,4 +403,12 @@ class LiveStreamQuirksTest {
         // …but a wedged mpv core must never freeze the engine toggle for that long.
         assertTrue(OwnTVPlayer.MPV_RELEASE_TIMEOUT_MS < LivePreviewEngine.SESSION_RELEASE_MS)
     }
+
+    @Test
+    fun `a panel's own 450-499 refusal codes are request refusals, never a format failure`() {
+        // (DPTV v2.9.27) A 460 used to swap .ts and .m3u8 and retry every few seconds.
+        for (code in listOf(450, 456, 458, 460, 461, 499)) assertTrue("$code", LiveStreamQuirks.isRequestRefusal(code))
+        for (code in listOf(400, 404, 410, 415, 500)) assertFalse("$code", LiveStreamQuirks.isRequestRefusal(code))
+        assertTrue(LiveStreamQuirks.isRequestRefusal(429))
+    }
 }
