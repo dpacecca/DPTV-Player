@@ -44,6 +44,8 @@ class SettingsBackupCoverageTest {
         "recorder_server_url", "recorder_api_key",
         // (DPTV v2.9.14) Where this device's recorder key came from: belongs with the key, on this device.
         "recorder_signed_in_as", "recorder_set_by_hand",
+        // (DPTV v2.9.27) The recorder's home address from DPTV-Server: comes with the sign-in, on this device.
+        "recorder_local_url",
     )
 
     private fun allKeys(): List<Preferences.Key<*>> =
