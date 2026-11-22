@@ -317,11 +317,16 @@ fun PlayerHud(
     // Used only by "Report this stream", which writes the current readout into the playback log (F18).
     val reportContext = androidx.compose.ui.platform.LocalContext.current
     var wakeTick by remember { mutableIntStateOf(0) }
+    // (DPTV v2.9.24) ◀/▶ on a recording or film with the controls hidden: only the timeline shows while
+    // scrubbing, and hides a few seconds after the last press. OK then pauses and brings up the controls.
+    var scrubBarVisible by remember { mutableStateOf(false) }
+    var scrubTick by remember { mutableIntStateOf(0) }
     val forceShow = error != null || dialog != HudDialog.NONE
     // First Back hides the controls (instead of leaving the channel); with the controls already hidden
     // this handler is disabled, so Back falls through to the shell, which exits the player. Also disabled
     // while an error/dialog is up (a dialog handles its own Back; an error should exit).
     BackHandler(enabled = controlsVisible && !forceShow) { controlsVisible = false }
+    BackHandler(enabled = scrubBarVisible && !controlsVisible) { scrubBarVisible = false }
     // Channel zap (live only): a brief "now watching" card on up/down without revealing the full HUD.
     val canZap = onChannelUp != null && onChannelDown != null
     var channelFlash by remember { mutableIntStateOf(0) }
@@ -464,6 +469,8 @@ fun PlayerHud(
     LaunchedEffect(bannerVisible, player) { if (bannerVisible) player.refreshStreamChips() }
     // The controls coming up take the banner's place.
     LaunchedEffect(controlsVisible) { if (controlsVisible) bannerVisible = false }
+    LaunchedEffect(controlsVisible) { if (controlsVisible) scrubBarVisible = false }
+    LaunchedEffect(scrubBarVisible, scrubTick) { if (scrubBarVisible) { delay(SCRUB_BAR_MS); scrubBarVisible = false } }
     DisposableEffect(showInfo, player) {
         if (showInfo) player.refreshStreamChips()
         player.setBitrateTrackingEnabled(showInfo)
@@ -738,12 +745,15 @@ fun PlayerHud(
                     val back = e.key == Key.DirectionLeft
                     if (onScrubLive != null) {
                         onScrubLive(if (back) LIVE_SCRUB_STEP_SEC else -LIVE_SCRUB_STEP_SEC)
+                        focusSeekOnShow = true
+                        controlsVisible = true
                     } else {
+                        // (DPTV v2.9.24) A recording or film: just the timeline while scrubbing.
                         val step = player.seekStepMs.value
                         player.seekBy(if (back) -step else step)
+                        scrubBarVisible = true
+                        scrubTick++
                     }
-                    focusSeekOnShow = true
-                    controlsVisible = true
                     true
                 }
                 // The category list lives at logical Start; history lives at logical End.
@@ -765,6 +775,12 @@ fun PlayerHud(
                             e.type != KeyEventType.KeyDown || e.key == Key.Back -> false
                             // v2: OK shows the banner for a while; OK while it is up opens the controls.
                             ok && infoBanner != null && !bannerVisible -> { bannerMs = INFO_BANNER_MS; bannerTick++; true }
+                            // (DPTV v2.9.24) A recording or film: OK pauses, then shows the controls.
+                            ok && !isLive && duration > 0L && error == null -> {
+                                if (isPlaying) player.togglePlayPause()
+                                controlsVisible = true
+                                true
+                            }
                             else -> { controlsVisible = true; true }
                         }
                     },
@@ -818,6 +834,19 @@ fun PlayerHud(
         // focusable and not interactive: stopping a recording is the Recordings screen's job, and a
         // stop button one stray D-pad press from the middle of a programme is not a kindness.
         RecordingBadge(modifier = Modifier.align(Alignment.TopEnd))
+
+        // (DPTV v2.9.24) Scrubbing a recording or film with the controls hidden: the timeline alone.
+        if (!controlsVisible && scrubBarVisible && error == null && !isLive && duration > 0L) {
+            Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(140.dp)
+                .gradientWash(
+                    vertical = true,
+                    0.0f to Color.Transparent,
+                    1.0f to hudShade(0.7f),
+                ))
+            Dock(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 28.dp, vertical = 24.dp)) {
+                VodTimeline(player, position = { position.value }, duration = duration, seekFocus = null, scrubbing = true)
+            }
+        }
 
         if (controlsVisible) {
             // Scrims: a FLAT semi-transparent panel behind the controls, feathered to transparent only at
