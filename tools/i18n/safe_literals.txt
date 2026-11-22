@@ -271,10 +271,12 @@
 1	technical	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	rhdr_$labelRes
 1	technical	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	rhdr_series
 1	technical	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	rs_${it.rule.id}
-2	empty	app/src/main/java/tv/own/owntv/features/recordings/RecordingsViewModel.kt	\0
+3	empty	app/src/main/java/tv/own/owntv/features/recordings/RecordingsViewModel.kt	\0
 1	log	app/src/main/java/tv/own/owntv/features/recordings/RecordingsViewModel.kt	DvrSync
+1	log	app/src/main/java/tv/own/owntv/features/recordings/RecordingsViewModel.kt	NO_SERVER
 3	preference-key	app/src/main/java/tv/own/owntv/features/recordings/RecordingsViewModel.kt	dur_$id
 2	preference-key	app/src/main/java/tv/own/owntv/features/recordings/RecordingsViewModel.kt	dur_${recording.id}
+1	log	app/src/main/java/tv/own/owntv/features/recordings/RecordingsViewModel.kt	dvr: no playback link for recording
 1	preference-key	app/src/main/java/tv/own/owntv/features/recordings/RecordingsViewModel.kt	dvr_progress
 3	preference-key	app/src/main/java/tv/own/owntv/features/recordings/RecordingsViewModel.kt	pos_$id
 1	preference-key	app/src/main/java/tv/own/owntv/features/recordings/RecordingsViewModel.kt	pos_${recording.id}
