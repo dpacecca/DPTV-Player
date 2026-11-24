@@ -4029,7 +4029,6 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/subtitles/OpenSubtitlesClient.kt	x-owntv-client
 1	protocol	core/src/main/java/tv/own/owntv/core/subtitles/OpenSubtitlesClient.kt	x-owntv-key
 1	protocol	core/src/main/java/tv/own/owntv/core/subtitles/OpenSubtitlesClient.kt	x-owntv-version
-1	empty	core/src/main/java/tv/own/owntv/core/subtitles/SubtitleCharset.kt	\0
 1	technical	core/src/main/java/tv/own/owntv/core/subtitles/SubtitleCharset.kt	windows-1252
 1	technical	core/src/main/java/tv/own/owntv/core/subtitles/SubtitleRepository.kt	LOCAL
 1	technical	core/src/main/java/tv/own/owntv/core/subtitles/SubtitleRepository.kt	OPENSUB
