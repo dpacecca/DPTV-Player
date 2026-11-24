@@ -7,6 +7,7 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -28,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
@@ -232,36 +234,52 @@ internal val VodPosterRowsH get() = 294.mpx * 2 + 30.mpx
  */
 @Composable
 internal fun VodHero(info: VodTitleInfo, modifier: Modifier = Modifier) {
-    Column(modifier.clipToBounds()) {
-        var logoFailed by remember(info.logoUrl) { mutableStateOf(false) }
-        if (!info.logoUrl.isNullOrBlank() && !logoFailed) {
-            Box(Modifier.fillMaxWidth().height(96.mpx), contentAlignment = Alignment.BottomStart) {
-                StageTitleArt(
-                    url = info.logoUrl,
-                    contentDescription = null,
-                    onFailed = { logoFailed = true },
-                    modifier = Modifier.fillMaxSize(),
+    // (DPTV v2.9.30) The hero is only what is left above two poster rows, often under 250 high: the
+    // synopsis used to be cut through the middle of a line by the toolbar. A short hero now takes
+    // smaller title art and tighter spacing, and the synopsis shows only the lines that fit whole.
+    BoxWithConstraints(modifier.clipToBounds()) {
+        val compact = maxHeight < 260.mpx
+        Column(Modifier.fillMaxSize()) {
+            var logoFailed by remember(info.logoUrl) { mutableStateOf(false) }
+            if (!info.logoUrl.isNullOrBlank() && !logoFailed) {
+                Box(Modifier.fillMaxWidth().height(if (compact) 64.mpx else 96.mpx), contentAlignment = Alignment.BottomStart) {
+                    StageTitleArt(
+                        url = info.logoUrl,
+                        contentDescription = null,
+                        onFailed = { logoFailed = true },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            } else {
+                // The live guide's title (DPTV v2.3.1): 40/800, two lines, so the poster rows get the room.
+                Text(
+                    HeadlineTitle.of(info.title), style = stageText(if (compact) 32 else 40, 800, (-0.5).mpxSp), color = StageColors.Text,
+                    maxLines = if (compact) 1 else 2, overflow = TextOverflow.Ellipsis,
                 )
             }
-        } else {
-            // The live guide's title (DPTV v2.3.1): 40/800, two lines, so the poster rows get the room.
-            Text(
-                HeadlineTitle.of(info.title), style = stageText(40, 800, (-0.5).mpxSp), color = StageColors.Text,
-                maxLines = 2, overflow = TextOverflow.Ellipsis,
+            VodMeta(
+                parts = listOfNotNull(info.year?.toString(), info.genres.takeIf { it.isNotEmpty() }?.joinToString(", "), info.runtimeSecs?.let { vodRuntime(it) }),
+                rating = info.rating, tags = info.tags, size = 20,
+                modifier = Modifier.padding(top = if (compact) 8.mpx else 18.mpx, bottom = if (compact) 6.mpx else 12.mpx),
             )
+            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+                val lineHeight = (19.5f * 1.55f).mpxSp
+                val linePx = with(LocalDensity.current) { lineHeight.toPx() }
+                val roomPx = constraints.maxHeight
+                val plot = info.plot?.takeIf { it.isNotBlank() }
+                val lines = if (plot == null) 0 else (roomPx / linePx).toInt().coerceIn(0, 3)
+                val castPx = with(LocalDensity.current) { 130.mpx.toPx() }
+                Column {
+                    if (plot != null && lines > 0) {
+                        Text(
+                            plot, style = stageText(19.5f, 400).copy(lineHeight = lineHeight), color = StageColors.Body,
+                            maxLines = lines, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 860.mpx),
+                        )
+                    }
+                    if (info.cast.isNotEmpty() && roomPx - lines * linePx >= castPx) VodCast(info.cast, 6, Modifier.padding(top = 20.mpx))
+                }
+            }
         }
-        VodMeta(
-            parts = listOfNotNull(info.year?.toString(), info.genres.takeIf { it.isNotEmpty() }?.joinToString(", "), info.runtimeSecs?.let { vodRuntime(it) }),
-            rating = info.rating, tags = info.tags, size = 20,
-            modifier = Modifier.padding(top = 18.mpx, bottom = 12.mpx),
-        )
-        info.plot?.takeIf { it.isNotBlank() }?.let {
-            Text(
-                it, style = stageText(19.5f, 400).copy(lineHeight = (19.5f * 1.55f).mpxSp), color = StageColors.Body,
-                maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 860.mpx),
-            )
-        }
-        if (info.cast.isNotEmpty()) VodCast(info.cast, 6, Modifier.padding(top = 20.mpx))
     }
 }
 

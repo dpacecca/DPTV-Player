@@ -1332,6 +1332,15 @@ private fun EpisodeView(
     // Opening a show: focus the LAST-WATCHED episode if there is one (#22), else the first. Waits for
     // !loading so the seeded last-watched id/season from the VM is settled. When entering via
     // player-return, mark done WITHOUT focusing — the restore below owns focus.
+    // (DPTV v2.9.30) The grid tile that opened the show is gone, so until an episode can take focus it
+    // fell to the menu, where Back asks to leave the app. The page's ⋯ holds it meanwhile.
+    LaunchedEffect(series.id) {
+        withFrameNanos { }
+        if (!initialFocused) repeat(10) {
+            if (initialFocused || runCatching { moreFocus.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
+            delay(50)
+        }
+    }
     LaunchedEffect(loading, seasonEpisodes.isNotEmpty(), restoreFocus) {
         if (initialFocused) return@LaunchedEffect
         if (restoreFocus) { initialFocused = true; return@LaunchedEffect }
@@ -1339,12 +1348,13 @@ private fun EpisodeView(
             initialFocused = true
             val idx = lastPlayedId?.let { id -> visibleEpisodes.indexOfFirst { it.id == id } } ?: -1
             delay(80)
-            if (idx >= 0) {
-                runCatching { scrollEpisodes(idx) }
-                delay(40)
-                runCatching { selFocus.requestFocus() }
-            } else {
-                runCatching { firstEpFocus.requestFocus() }
+            if (idx >= 0) runCatching { scrollEpisodes(idx) }
+            // (DPTV v2.9.30) The episode row may not be composed on the first try: keep asking for up to a
+            // second instead of giving up after one attempt.
+            val target = if (idx >= 0) selFocus else firstEpFocus
+            repeat(20) {
+                if (runCatching { target.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
+                delay(50)
             }
         }
     }
