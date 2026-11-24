@@ -547,23 +547,15 @@ fun HomeScreen(
         }
     }
 
-    // (OwnTV #314) The rows inside read the spec above too, and flush to the row's own edge the last card
-    // (scaled up, with its ring) ran off the screen. Across a row, keep the card inside the row's padding
-    // instead: [contentStart] before it, the 64 every row ends with after it.
-    val rowDensity = LocalDensity.current
-    val rowBringIntoViewSpec = remember(contentStart, rowDensity) {
-        val before = with(rowDensity) { contentStart.toPx() }
-        val after = with(rowDensity) { 64.mpx.toPx() }
+    // (DPTV v2.9.30) Across a row, the focused card is kept in the middle of the screen, so the row moves
+    // under it instead of focus running to the edge and the row then bringing in one card per press.
+    // The row cannot scroll past its first or last card, so focus still reaches both ends, each resting
+    // inside the row's own padding (OwnTV #314: never flush to the edge, where the scaled-up card's ring
+    // ran off the screen).
+    val rowBringIntoViewSpec = remember {
         object : BringIntoViewSpec {
-            override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
-                val leading = offset - before
-                val trailing = offset + size - (containerSize - after)
-                return when {
-                    leading >= 0f && trailing <= 0f -> 0f
-                    leading < 0f || size > containerSize - before - after -> leading
-                    else -> trailing
-                }
-            }
+            override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float =
+                offset - (containerSize - size) / 2f
         }
     }
 
