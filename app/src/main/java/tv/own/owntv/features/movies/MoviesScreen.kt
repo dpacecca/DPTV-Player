@@ -266,7 +266,7 @@ fun MoviesScreen(
         else buildList {
             // (v2.10.1) Trending and New releases live in Discover only; each entry has its own icon.
             add(tv.own.owntv.features.live.LiveRailItem(DiscoverKey, title = discoverTitle, icon = OwnTVIcon.SPARKLE))
-            if (smartCats.any { it.kind == "genre" }) add(tv.own.owntv.features.live.LiveRailItem(smartKey(GenreGroup), title = byGenreTitle, icon = OwnTVIcon.TILES))
+            if (smartCats.any { it.kind == "genre" }) add(tv.own.owntv.features.live.LiveRailItem(smartKey(GenreGroup), title = byGenreTitle, icon = OwnTVIcon.TAGS))
             if (smartCats.any { it.kind == "decade" }) add(tv.own.owntv.features.live.LiveRailItem(smartKey(DecadeGroup), title = byDecadeTitle, icon = OwnTVIcon.CALENDAR))
         }
     }

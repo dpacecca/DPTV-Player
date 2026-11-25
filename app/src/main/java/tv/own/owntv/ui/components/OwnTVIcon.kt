@@ -52,6 +52,8 @@ enum class OwnTVIcon {
     SPORT,
     // Audio mode's equaliser mark (the bar at rest, the rail's Now playing item).
     EQ,
+    // (DPTV v2.10.1) A price tag: Movies by Genre in the Movies menu.
+    TAGS,
 }
 
 /** Parsed once: [StageGlyphPaths] in 24-unit coordinates. */
