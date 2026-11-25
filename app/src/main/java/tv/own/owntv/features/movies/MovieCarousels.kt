@@ -79,8 +79,8 @@ internal class MovieTileActions(
 )
 
 /**
- * (DPTV v2.9.31) Movies' landing: one carousel per DPTV-Server movie category, its first
- * [CarouselFilms] films and a View more tile that opens the whole category. The focused film fills the
+ * (DPTV v2.9.31) One carousel per DPTV-Server movie category: the category's own tile first (OK opens
+ * the whole category), then its first [CarouselFilms] films, then View more (the whole category again). The focused film fills the
  * hero above, as browsing a category does. Across a row the focused poster stays in the middle; down
  * the rows, the focused row comes to the top.
  */
@@ -130,18 +130,35 @@ internal fun MovieCarousels(
                             contentPadding = PaddingValues(start = start, end = end, top = 10.mpx, bottom = 14.mpx),
                             modifier = Modifier.fillMaxWidth().focusRestorer().focusGroup(),
                         ) {
-                            val shown = category.films.take(CarouselFilms)
-                            itemsIndexed(shown, key = { _, f -> f.movie.id }) { index, film ->
-                                MovieTile(
-                                    film = film, width = 160.mpx, height = 240.mpx, actions = actions,
+                            // The category's own tile first: OK opens the whole category; ▶ browses its films.
+                            item(key = "name") {
+                                StagePoster(
+                                    title = category.name,
+                                    onClick = { onViewMore(category) },
+                                    width = 160.mpx, height = 240.mpx,
                                     modifier = Modifier
-                                        .then(if (rowIndex == 0 && index == 0) Modifier.focusRequester(firstFocus) else Modifier)
+                                        .then(if (rowIndex == 0) Modifier.focusRequester(firstFocus) else Modifier)
                                         .onPreviewKeyEvent { e ->
-                                            index == 0 && e.type == KeyEventType.KeyDown && e.key == Key.DirectionLeft &&
-                                                run { actions.onLeftEdge(); true }
+                                            e.type == KeyEventType.KeyDown && e.key == Key.DirectionLeft && run { actions.onLeftEdge(); true }
                                         },
-                                )
+                                ) {
+                                    Box(Modifier.fillMaxSize().padding(14.mpx), contentAlignment = Alignment.Center) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                category.name, style = stageText(24, 800), color = StageColors.Text,
+                                                maxLines = 3, overflow = TextOverflow.Ellipsis,
+                                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                            )
+                                            Spacer(Modifier.height(12.mpx))
+                                            OwnTVIcon(OwnTVIcon.CHEVRON, StageColors.Muted, Modifier.size(34.mpx))
+                                        }
+                                    }
+                                }
                             }
+                            itemsIndexed(category.films.take(CarouselFilms), key = { _, f -> f.movie.id }) { _, film ->
+                                MovieTile(film = film, width = 160.mpx, height = 240.mpx, actions = actions)
+                            }
+                            // …and View more at the end, with the category's full count.
                             item(key = "more") {
                                 StagePoster(
                                     title = stringResource(R.string.movies_view_more),

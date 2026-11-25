@@ -376,4 +376,8 @@
     <string name="movies_sort_popular">Popular</string>
     <!-- Translators: (DPTV) Order of a movie category: newest release first. -->
     <string name="movies_sort_release_date">Release date</string>
+    <!-- Translators: (DPTV) Movies menu: carousels of every genre. -->
+    <string name="movies_by_genre">Movies by Genre</string>
+    <!-- Translators: (DPTV) Movies menu: carousels of every decade. -->
+    <string name="movies_by_decade">Movies by Decade</string>
 </resources>

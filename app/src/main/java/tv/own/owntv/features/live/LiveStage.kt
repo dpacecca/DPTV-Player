@@ -1,5 +1,6 @@
 package tv.own.owntv.features.live
 
+import tv.own.owntv.features.movies.isSmart
 import tv.own.owntv.core.live.ProviderName
 import tv.own.owntv.core.live.ProviderTags
 import tv.own.owntv.ui.theme.stageTone
@@ -557,7 +558,11 @@ internal fun LiveCategories(
         }
     }
     // Where the fixed entries end and the provider groups begin (the "GROUPS · DE" heading).
-    val firstGroup = entries.indexOfFirst { it.item.key is tv.own.owntv.core.live.LiveKey.Folder || it.item.key is tv.own.owntv.core.live.LiveKey.Custom }
+    // (DPTV v2.9.31) DPTV-Server's movie categories sit above the provider heading, not under it.
+    val firstGroup = entries.indexOfFirst {
+        (it.item.key is tv.own.owntv.core.live.LiveKey.Folder || it.item.key is tv.own.owntv.core.live.LiveKey.Custom) &&
+            !it.item.key.isSmart()
+    }
     val rightKey = Modifier.onPreviewKeyEvent { e ->
         if (e.type == KeyEventType.KeyDown && e.key == Key.DirectionRight) { onNavigateRight(); true } else false
     }
