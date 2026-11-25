@@ -238,12 +238,12 @@
 1	log	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	stalker VOD reconnect resolve failed movieId=${movie.id}
 2	log	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	stalker resolve failed movieId=${movie.id}
 1	empty	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	\0
-4	json	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	decade
+6	json	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	decade
 2	technical	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	delete_subtitles
 1	json	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	discover
 1	preference-key	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	download
 1	preference-key	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	favourite
-4	json	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	genre
+6	json	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	genre
 1	preference-key	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	hide
 1	preference-key	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	mark_watched
 1	preference-key	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	move

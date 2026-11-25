@@ -712,10 +712,17 @@ fun MoviesScreen(
                         )
                     } else {
                         MovieCarousels(
-                            categories = smartRows, start = fx(84), end = fx(64), firstFocus = firstItemFocus,
+                            // (DPTV v2.10.1) A genre's or decade's carousel leads with its best-rated films.
+                            categories = remember(smartRows) {
+                                smartRows.map { c ->
+                                    if (c.kind == "genre" || c.kind == "decade") c.copy(films = c.films.sortedFor(SmartSort.RATING)) else c
+                                }
+                            },
+                            start = fx(84), end = fx(64), firstFocus = firstItemFocus,
                             actions = tileActions,
                             onViewMore = { c ->
-                                smartSort = SmartSort.POPULAR
+                                // A genre or decade opens best rated first; Trending and New releases in their own order.
+                                smartSort = if (c.kind == "genre" || c.kind == "decade") SmartSort.RATING else SmartSort.POPULAR
                                 vm.select(smartKey(c.id))
                                 scope.launch {
                                     repeat(20) {
