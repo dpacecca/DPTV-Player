@@ -532,6 +532,10 @@ fun MoviesScreen(
             }
         }
     }
+    // (DPTV v2.10.1) Back in Discover opens the categories.
+    androidx.activity.compose.BackHandler(
+        enabled = cinematic && !categoriesOpen && smartCats.isNotEmpty() && selectedKey == DiscoverKey,
+    ) { categoriesOpen = true }
     // Movies opens on Discover once the categories are known (a remembered provider category still wins).
     var smartLanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(cinematic, smartCats.isNotEmpty()) {
