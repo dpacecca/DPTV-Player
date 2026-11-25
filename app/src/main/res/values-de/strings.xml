@@ -368,4 +368,10 @@
     <string name="dvr_play_failed_title">Aufnahme kann nicht abgespielt werden</string>
     <string name="dvr_play_failed_message">%1$s: %2$s</string>
     <string name="dvr_play_failed_no_server">Auf diesem Gerät ist kein Aufnahmeserver eingerichtet (Einstellungen › Aufnahme)</string>
+    <string name="movies_view_more">Mehr anzeigen</string>
+    <string name="movies_discover">Entdecken</string>
+    <string name="movies_sort_popular">Beliebt</string>
+    <string name="movies_sort_release_date">Erscheinungsdatum</string>
+    <string name="movies_by_genre">Filme nach Genre</string>
+    <string name="movies_by_decade">Filme nach Jahrzehnt</string>
 </resources>

@@ -167,7 +167,8 @@ fun MoviesScreen(
     val alreadyDownloadedMessage = stringResource(R.string.content_already_downloaded)
     val refetchingTmdbMessage = stringResource(R.string.content_refetching_tmdb)
     val researchingTmdbMessage = stringResource(R.string.content_researching_tmdb)
-    val railItems by vm.railItems.collectAsStateWithLifecycle()
+    val baseRail by vm.railItems.collectAsStateWithLifecycle()
+    val smartCats by vm.smartCategories.collectAsStateWithLifecycle()
     val selectedKey by vm.selectedKey.collectAsStateWithLifecycle()
     val count by vm.count.collectAsStateWithLifecycle()
     val favoriteIds by vm.favoriteIds.collectAsStateWithLifecycle()
@@ -222,9 +223,6 @@ fun MoviesScreen(
     val externalPlayerOn by vm.externalPlayerOn.collectAsStateWithLifecycle()
     val goFullscreen: () -> Unit = { if (!externalPlayerOn) onFullscreen() }
 
-    val selectedIndex = railItems.indexOfFirst { it.key == selectedKey }.coerceAtLeast(0)
-    val selectedItem = railItems.getOrNull(selectedIndex)
-    val selectedLabel = selectedItem?.displayLabel(R.string.content_category_all_movies) ?: stringResource(R.string.content_category_all_movies)
 
     // Resume flow: AUTO continues silently, ASK prompts (≥10s saved), NEVER starts from zero.
     val scope = rememberCoroutineScope()
@@ -253,6 +251,37 @@ fun MoviesScreen(
     val vodLayout by settingsVm.vodLayout.collectAsStateWithLifecycle()
     // Cinematic is the browse section's; More → Favourites / History pin the plain Separate list.
     val cinematic = vodLayout == SettingsRepository.VodLayout.CINEMATIC && lockedKey == null
+    // (DPTV v2.9.31) DPTV-Server's movie categories head the menu, above the provider's (Cinematic only):
+    // Discover, Trending this week, New releases, Movies by Genre and Movies by Decade.
+    val discoverTitle = stringResource(R.string.movies_discover)
+    val byGenreTitle = stringResource(R.string.movies_by_genre)
+    val byDecadeTitle = stringResource(R.string.movies_by_decade)
+    val smartRail = remember(smartCats, cinematic, discoverTitle, byGenreTitle, byDecadeTitle) {
+        if (!cinematic || smartCats.isEmpty()) emptyList()
+        else buildList {
+            add(tv.own.owntv.features.live.LiveRailItem(DiscoverKey, title = discoverTitle, icon = OwnTVIcon.SPARKLE))
+            smartCats.filter { it.kind == "trending" || it.kind == "new" }
+                .forEach { add(tv.own.owntv.features.live.LiveRailItem(smartKey(it.id), title = it.name)) }
+            if (smartCats.any { it.kind == "genre" }) add(tv.own.owntv.features.live.LiveRailItem(smartKey(GenreGroup), title = byGenreTitle))
+            if (smartCats.any { it.kind == "decade" }) add(tv.own.owntv.features.live.LiveRailItem(smartKey(DecadeGroup), title = byDecadeTitle))
+        }
+    }
+    val railItems = remember(baseRail, smartRail) {
+        if (smartRail.isEmpty()) baseRail
+        else {
+            val at = baseRail.indexOfFirst { it.key is LiveKey.Folder || it.key is LiveKey.Custom }.let { if (it < 0) baseRail.size else it }
+            baseRail.take(at) + smartRail + baseRail.drop(at)
+        }
+    }
+    // A genre or decade isn't in the menu itself: its "Movies by…" entry is the one marked.
+    val menuKey = when (smartCats.firstOrNull { it.id == selectedKey.smartId() }?.kind) {
+        "genre" -> smartKey(GenreGroup)
+        "decade" -> smartKey(DecadeGroup)
+        else -> selectedKey
+    }
+    val selectedIndex = railItems.indexOfFirst { it.key == menuKey }.coerceAtLeast(0)
+    val selectedItem = railItems.getOrNull(selectedIndex)
+    val selectedLabel = selectedItem?.displayLabel(R.string.content_category_all_movies) ?: stringResource(R.string.content_category_all_movies)
     val cinematicDetailsPct by settingsVm.cinematicDetailsHeight(PanelSection.MOVIES).collectAsStateWithLifecycle()
     // Cinematic is grid-only: the List rows have nowhere to put a full-bleed backdrop. The stored
     // choice is deliberately not rewritten, so switching back to Separate restores the user's List.
@@ -284,6 +313,9 @@ fun MoviesScreen(
     val playlistMarks by vm.playlistMarks.collectAsStateWithLifecycle()
     // Separate keeps the categories on screen; Cinematic opens them as a sheet (◀, or the Categories tool).
     var categoriesOpen by remember { mutableStateOf(false) }
+    // (DPTV v2.9.31) DPTV-Server's movie categories as carousels when Movies opens (Discover); View more
+    // opens one of them as a grid. Picking a category from the sheet leaves Discover; Back returns to it.
+    var smartSort by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(SmartSort.POPULAR) }
     var sheetHadFocus by remember { mutableStateOf(false) }
     var sortOpen by remember { mutableStateOf(false) }
     val sortFocus = remember { FocusRequester() }
@@ -468,6 +500,49 @@ fun MoviesScreen(
 
     // Back closes the sheet: one level out.
     androidx.activity.compose.BackHandler(enabled = categoriesOpen) { categoriesOpen = false; focusCurrentTitle() }
+    val smartId = selectedKey.smartId()
+    val smartOpen = smartCats.firstOrNull { it.id == smartId }
+    val smartRows = when (smartId) {
+        "discover" -> smartCats.filter { it.kind == "trending" || it.kind == "new" }
+        GenreGroup -> smartCats.filter { it.kind == "genre" }
+        DecadeGroup -> smartCats.filter { it.kind == "decade" }
+        else -> emptyList()
+    }
+    val showDiscover = cinematic && smartRows.isNotEmpty()
+    // Back steps out: a genre or decade to its carousels, anything else to Discover, Discover to the menu.
+    val smartParent: LiveKey = when (smartOpen?.kind) {
+        "genre" -> smartKey(GenreGroup)
+        "decade" -> smartKey(DecadeGroup)
+        else -> DiscoverKey
+    }
+    androidx.activity.compose.BackHandler(
+        enabled = cinematic && !categoriesOpen && smartCats.isNotEmpty() && selectedKey != DiscoverKey,
+    ) {
+        vm.setSearchQuery("")
+        vm.select(smartParent)
+        scope.launch {
+            repeat(20) {
+                withFrameNanos { }
+                if (runCatching { firstItemFocus.requestFocus() }.getOrDefault(false)) return@launch
+            }
+        }
+    }
+    // Movies opens on Discover once the categories are known (a remembered provider category still wins).
+    var smartLanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(cinematic, smartCats.isNotEmpty()) {
+        if (smartLanded || !cinematic || smartCats.isEmpty()) return@LaunchedEffect
+        smartLanded = true
+        if (selectedKey == LiveKey.All) vm.select(DiscoverKey)
+    }
+    // The categories arrive a moment after Movies opens: a title focused in the grid then vanishes, so
+    // focus follows to the first carousel instead of dropping to the menu.
+    LaunchedEffect(showDiscover) {
+        if (!showDiscover || !gridPaneFocused) return@LaunchedEffect
+        repeat(20) {
+            withFrameNanos { }
+            if (runCatching { firstItemFocus.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
+        }
+    }
     LaunchedEffect(categoriesOpen) {
         if (categoriesOpen) { withFrameNanos { }; runCatching { railFocus.requestFocus() } }
         // However the sheet closed (Back, a pick, ◀ to the rail), the next one starts fresh.
@@ -496,12 +571,12 @@ fun MoviesScreen(
             onJumpToIndex = { idx -> catFocusIndex = idx; railFocusRow = idx },
         )
     val onCategorySelect: (Int) -> Unit = { idx ->
-        railItems.getOrNull(idx)?.let { vm.select(it.key) }
+        railItems.getOrNull(idx)?.let { if (it.key.isSmart()) smartSort = SmartSort.POPULAR; vm.select(it.key) }
         if (categoriesOpen) { categoriesOpen = false; focusTitles() }
     }
     val onCategoryLongSelect: (Int) -> Unit = { idx ->
         railItems.getOrNull(idx)?.let { item ->
-            if (item.key is LiveKey.Folder || item.key is LiveKey.Custom) {
+            if ((item.key is LiveKey.Folder || item.key is LiveKey.Custom) && !item.key.isSmart()) {
                 contextCategory = item
                 contextCategoryKey = item.key
             }
@@ -603,11 +678,49 @@ fun MoviesScreen(
             Box(Modifier.fillMaxSize().then(if (categoriesOpen) Modifier.graphicsLayer { alpha = 0.36f } else Modifier)) {
                 VodCinematicBackdrop(titleInfo?.backdropUrl, series = false, Modifier.align(Alignment.TopEnd))
                 VodHeader(
-                    section = stringResource(R.string.common_nav_movies), category = headerLabel, count = vodCount(false, count),
+                    section = stringResource(R.string.common_nav_movies),
+                    category = smartOpen?.name ?: headerLabel,
+                    count = vodCount(false, smartOpen?.films?.size ?: if (showDiscover) smartRows.size else count),
                     showChevron = true, modifier = Modifier.padding(start = fx(84), top = 52.mpx).width(fx(900)),
                 )
                 titleInfo?.let { VodHero(it, Modifier.padding(start = fx(84), top = 122.mpx).width(fx(1000)).height(heroH)) }
-                Column(Modifier.padding(top = toolTop).fillMaxSize().then(paneModifier)) {
+                if (showDiscover || smartOpen != null) {
+                    // (DPTV v2.9.31) The movie categories: carousels, or one category's grid after View more.
+                    val tileActions = MovieTileActions(
+                        posterOf = posterOf,
+                        progressOf = { m -> movieProgress[m.id]?.takeIf { it.durationMs > 0 }?.let { it.positionMs.toFloat() / it.durationMs } },
+                        watchedOf = { m -> movieProgress[m.id]?.let { vm.isMovieCompleted(it) } == true },
+                        onFocus = { m -> vm.onMovieFocused(m) },
+                        onPlay = { m -> startMovie(m) },
+                        onMenu = { m -> openMenu(m, -1) },
+                        onLeftEdge = { categoriesOpen = true },
+                    )
+                    val pane = Modifier.padding(top = toolTop).fillMaxSize().onFocusChanged { gridPaneFocused = it.hasFocus }
+                    if (smartOpen != null) {
+                        val rowW = screenW - fx(84) - fx(64)
+                        SmartCategoryGrid(
+                            category = smartOpen, sort = smartSort, onSort = { smartSort = it },
+                            columns = ((rowW + 26.mpx) / 222.mpx).toInt().coerceAtLeast(1),
+                            start = fx(84), end = fx(64), firstFocus = firstItemFocus, actions = tileActions, modifier = pane,
+                        )
+                    } else {
+                        MovieCarousels(
+                            categories = smartRows, start = fx(84), end = fx(64), firstFocus = firstItemFocus,
+                            actions = tileActions,
+                            onViewMore = { c ->
+                                smartSort = SmartSort.POPULAR
+                                vm.select(smartKey(c.id))
+                                scope.launch {
+                                    repeat(20) {
+                                        withFrameNanos { }
+                                        if (runCatching { firstItemFocus.requestFocus() }.getOrDefault(false)) return@launch
+                                    }
+                                }
+                            },
+                            modifier = pane,
+                        )
+                    }
+                } else Column(Modifier.padding(top = toolTop).fillMaxSize().then(paneModifier)) {
                     Row(
                         Modifier.padding(start = fx(68), end = fx(64)).fillMaxWidth()
                             // ▼ from the toolbar returns to the title the hero shows, not the poster below the tool.

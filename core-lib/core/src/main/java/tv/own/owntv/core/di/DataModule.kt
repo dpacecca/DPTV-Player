@@ -285,6 +285,8 @@ val dataModule = module {
     single { SeriesRepository(get(), get(), get(), get(), get(), get()) }
     // Provider details of a film or show (genres, cast, seasons…), fetched on open and kept in memory (DPTV v2.9.26).
     single { tv.own.owntv.core.repository.ProviderDetailsRepository(get(), get()) }
+    // (DPTV v2.9.31) DPTV-Server's movie categories: sourceDao, movieDao, xtreamClient.
+    single { tv.own.owntv.core.repository.SmartCategoriesRepository(get(), get(), get()) }
     // sourceDao, movieDao, seriesDao, progressDao
     single { LauncherRecommendationPlanner(get(), get(), get(), get(), get(), get()) }
     // sourceDao, channelDao, movieDao, seriesDao, progressDao

@@ -368,4 +368,16 @@
     <string name="dvr_play_failed_title">Can\'t play this recording</string>
     <string name="dvr_play_failed_message">%1$s: %2$s</string>
     <string name="dvr_play_failed_no_server">No recording server is set up on this device (Settings › Recording)</string>
+    <!-- Translators: (DPTV) Movies landing: the tile at the end of a category carousel that opens the whole category. -->
+    <string name="movies_view_more">View more</string>
+    <!-- Translators: (DPTV) Movies landing: the heading over the category carousels. -->
+    <string name="movies_discover">Discover</string>
+    <!-- Translators: (DPTV) Order of a movie category: as the server ranks it (trending, popularity). -->
+    <string name="movies_sort_popular">Popular</string>
+    <!-- Translators: (DPTV) Order of a movie category: newest release first. -->
+    <string name="movies_sort_release_date">Release date</string>
+    <!-- Translators: (DPTV) Movies menu: carousels of every genre. -->
+    <string name="movies_by_genre">Movies by Genre</string>
+    <!-- Translators: (DPTV) Movies menu: carousels of every decade. -->
+    <string name="movies_by_decade">Movies by Decade</string>
 </resources>
