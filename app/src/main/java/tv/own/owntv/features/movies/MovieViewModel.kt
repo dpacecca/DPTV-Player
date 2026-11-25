@@ -247,6 +247,41 @@ class MovieViewModel(
     private val custResolved: StateFlow<CustState> = combine(custom, hiddenCategoryIds) { c, h -> CustState(c, h) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CustState(SectionCustomizations(), emptySet()))
 
+    // (DPTV v2.9.31) DPTV-Server's movie categories (Trending, New releases, genres, decades), shown as
+    // carousels when Movies opens. None on a kids profile; hidden titles and categories stay hidden.
+    private val smartRepo: tv.own.owntv.core.repository.SmartCategoriesRepository by inject()
+    private val _smartRefresh = MutableStateFlow(0)
+    private val smartRaw: StateFlow<List<tv.own.owntv.core.repository.SmartCategoriesRepository.Category>> =
+        combine(ctx, _smartRefresh) { c, n -> c to n }
+            .flatMapLatest { (c, n) ->
+                if (c.profileId < 0 || c.sourceIds.isEmpty()) flowOf(emptyList())
+                else profileDao.observeById(c.profileId).map { it?.isKids == true }.distinctUntilChanged().map { kids ->
+                    if (kids) emptyList()
+                    else try {
+                        smartRepo.categories(c.sourceIds, force = n > 0)
+                    } catch (e: kotlinx.coroutines.CancellationException) {
+                        throw e
+                    } catch (_: Exception) {
+                        emptyList()
+                    }
+                }
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val smartCategories: StateFlow<List<tv.own.owntv.core.repository.SmartCategoriesRepository.Category>> =
+        combine(smartRaw, custResolved) { cats, cs ->
+            val cust = cs.cust
+            cats.mapNotNull { cat ->
+                val films = cat.films.filter { f ->
+                    CustomizeKeys.movie(f.movie) !in cust.hiddenItems && (f.movie.categoryId == null || f.movie.categoryId !in cs.hiddenCats)
+                }.map { f -> cust.itemNames[CustomizeKeys.movie(f.movie)]?.let { f.copy(movie = f.movie.copy(name = it)) } ?: f }
+                if (films.isEmpty()) null else cat.copy(films = films)
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Ask DPTV-Server again (after a sync, or from the screen's refresh). */
+    fun refreshSmartCategories() { _smartRefresh.value++ }
+
     /** List ordering for this section (Provider order vs A–Z), persisted in DataStore. */
     val sortMode: StateFlow<SettingsRepository.SortMode> = settings.sortMovies
         .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsRepository.SortMode.ALPHA)

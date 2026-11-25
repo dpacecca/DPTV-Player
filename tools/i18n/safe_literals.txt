@@ -221,6 +221,8 @@
 1	technical	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	sync-check:
 1	log	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	zap key press
 1	log	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	zap:
+1	protocol	app/src/main/java/tv/own/owntv/features/movies/MovieCarousels.kt	more
+1	technical	app/src/main/java/tv/own/owntv/features/movies/MovieCarousels.kt	· ${category.films.size}
 5	empty	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	${StorageAccess.sanitize(movie.name)}.${movie.containerExt ?: StorageAccess.extOf(movie.streamUrl)}
 1	technical	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	MOVIE
@@ -234,6 +236,7 @@
 1	log	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	saveProgressNow progress save failed movieId=${m.id} profile=$pid
 1	log	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	stalker VOD reconnect resolve failed movieId=${movie.id}
 2	log	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	stalker resolve failed movieId=${movie.id}
+1	empty	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	\0
 2	technical	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	delete_subtitles
 1	preference-key	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	download
 1	preference-key	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	favourite

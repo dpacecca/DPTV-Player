@@ -284,6 +284,12 @@ fun MoviesScreen(
     val playlistMarks by vm.playlistMarks.collectAsStateWithLifecycle()
     // Separate keeps the categories on screen; Cinematic opens them as a sheet (◀, or the Categories tool).
     var categoriesOpen by remember { mutableStateOf(false) }
+    // (DPTV v2.9.31) DPTV-Server's movie categories as carousels when Movies opens (Discover); View more
+    // opens one of them as a grid. Picking a category from the sheet leaves Discover; Back returns to it.
+    val smartCats by vm.smartCategories.collectAsStateWithLifecycle()
+    var discoverOn by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(true) }
+    var smartOpenId by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
+    var smartSort by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(SmartSort.POPULAR) }
     var sheetHadFocus by remember { mutableStateOf(false) }
     var sortOpen by remember { mutableStateOf(false) }
     val sortFocus = remember { FocusRequester() }
@@ -468,6 +474,30 @@ fun MoviesScreen(
 
     // Back closes the sheet: one level out.
     androidx.activity.compose.BackHandler(enabled = categoriesOpen) { categoriesOpen = false; focusCurrentTitle() }
+    val smartOpen = smartCats.firstOrNull { it.id == smartOpenId }
+    val showDiscover = cinematic && lockedKey == null && discoverOn && smartOpen == null && smartCats.isNotEmpty()
+    // (DPTV v2.9.31) Back from a category opened with View more returns to its carousels; Back from a
+    // provider category returns to Discover too, before the menu.
+    androidx.activity.compose.BackHandler(
+        enabled = cinematic && lockedKey == null && !categoriesOpen && smartCats.isNotEmpty() && (smartOpen != null || !discoverOn),
+    ) {
+        if (smartOpenId != null) smartOpenId = null else { discoverOn = true; vm.setSearchQuery("") }
+        scope.launch {
+            repeat(20) {
+                withFrameNanos { }
+                if (runCatching { firstItemFocus.requestFocus() }.getOrDefault(false)) return@launch
+            }
+        }
+    }
+    // The categories arrive a moment after Movies opens: a title focused in the grid then vanishes, so
+    // focus follows to the first carousel instead of dropping to the menu.
+    LaunchedEffect(showDiscover) {
+        if (!showDiscover || !gridPaneFocused) return@LaunchedEffect
+        repeat(20) {
+            withFrameNanos { }
+            if (runCatching { firstItemFocus.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
+        }
+    }
     LaunchedEffect(categoriesOpen) {
         if (categoriesOpen) { withFrameNanos { }; runCatching { railFocus.requestFocus() } }
         // However the sheet closed (Back, a pick, ◀ to the rail), the next one starts fresh.
@@ -496,6 +526,8 @@ fun MoviesScreen(
             onJumpToIndex = { idx -> catFocusIndex = idx; railFocusRow = idx },
         )
     val onCategorySelect: (Int) -> Unit = { idx ->
+        discoverOn = false
+        smartOpenId = null
         railItems.getOrNull(idx)?.let { vm.select(it.key) }
         if (categoriesOpen) { categoriesOpen = false; focusTitles() }
     }
@@ -603,11 +635,49 @@ fun MoviesScreen(
             Box(Modifier.fillMaxSize().then(if (categoriesOpen) Modifier.graphicsLayer { alpha = 0.36f } else Modifier)) {
                 VodCinematicBackdrop(titleInfo?.backdropUrl, series = false, Modifier.align(Alignment.TopEnd))
                 VodHeader(
-                    section = stringResource(R.string.common_nav_movies), category = headerLabel, count = vodCount(false, count),
+                    section = stringResource(R.string.common_nav_movies),
+                    category = smartOpen?.name ?: if (showDiscover) stringResource(R.string.movies_discover) else headerLabel,
+                    count = vodCount(false, smartOpen?.films?.size ?: if (showDiscover) smartCats.size else count),
                     showChevron = true, modifier = Modifier.padding(start = fx(84), top = 52.mpx).width(fx(900)),
                 )
                 titleInfo?.let { VodHero(it, Modifier.padding(start = fx(84), top = 122.mpx).width(fx(1000)).height(heroH)) }
-                Column(Modifier.padding(top = toolTop).fillMaxSize().then(paneModifier)) {
+                if (showDiscover || smartOpen != null) {
+                    // (DPTV v2.9.31) The movie categories: carousels, or one category's grid after View more.
+                    val tileActions = MovieTileActions(
+                        posterOf = posterOf,
+                        progressOf = { m -> movieProgress[m.id]?.takeIf { it.durationMs > 0 }?.let { it.positionMs.toFloat() / it.durationMs } },
+                        watchedOf = { m -> movieProgress[m.id]?.let { vm.isMovieCompleted(it) } == true },
+                        onFocus = { m -> vm.onMovieFocused(m) },
+                        onPlay = { m -> startMovie(m) },
+                        onMenu = { m -> openMenu(m, -1) },
+                        onLeftEdge = { categoriesOpen = true },
+                    )
+                    val pane = Modifier.padding(top = toolTop).fillMaxSize().onFocusChanged { gridPaneFocused = it.hasFocus }
+                    if (smartOpen != null) {
+                        val rowW = screenW - fx(84) - fx(64)
+                        SmartCategoryGrid(
+                            category = smartOpen, sort = smartSort, onSort = { smartSort = it },
+                            columns = ((rowW + 26.mpx) / 222.mpx).toInt().coerceAtLeast(1),
+                            start = fx(84), end = fx(64), firstFocus = firstItemFocus, actions = tileActions, modifier = pane,
+                        )
+                    } else {
+                        MovieCarousels(
+                            categories = smartCats, start = fx(84), end = fx(64), firstFocus = firstItemFocus,
+                            actions = tileActions,
+                            onViewMore = { c ->
+                                smartSort = SmartSort.POPULAR
+                                smartOpenId = c.id
+                                scope.launch {
+                                    repeat(20) {
+                                        withFrameNanos { }
+                                        if (runCatching { firstItemFocus.requestFocus() }.getOrDefault(false)) return@launch
+                                    }
+                                }
+                            },
+                            modifier = pane,
+                        )
+                    }
+                } else Column(Modifier.padding(top = toolTop).fillMaxSize().then(paneModifier)) {
                     Row(
                         Modifier.padding(start = fx(68), end = fx(64)).fillMaxWidth()
                             // ▼ from the toolbar returns to the title the hero shows, not the poster below the tool.

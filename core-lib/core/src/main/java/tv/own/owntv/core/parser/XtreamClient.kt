@@ -71,6 +71,15 @@ data class XtTitleDetails(
 /** (DPTV v2.9.26) One entry of a panel's `seasons` list. */
 data class XtSeasonInfo(val number: Int, val name: String?, val overview: String?, val coverUrl: String?)
 
+/** (DPTV v2.9.31) One of DPTV-Server's movie categories: its films' stream ids, in the server's order. */
+data class XtSmartCategory(val id: String, val name: String, val kind: String, val streamIds: List<String>)
+
+/** (DPTV v2.9.31) A film's release date ("YYYY-MM-DD" or "YYYY") and rating, as DPTV-Server knows them. */
+data class XtSmartFilm(val release: String?, val rating: Double?)
+
+/** (DPTV v2.9.31) DPTV-Server's `dptv_smart_categories` answer. */
+data class XtSmartCatalog(val categories: List<XtSmartCategory>, val films: Map<String, XtSmartFilm>)
+
 /**
  * An episode whose `episode_num` the panel left blank (or 0) takes its position within its season
  * instead — panels still list them in order, and otherwise every one of them reads as "episode 0"
@@ -274,6 +283,84 @@ class XtreamClient(private val http: HttpClient) {
     }
 
     /** (DPTV v2.9.26) A film's details from `get_vod_info`; null when the panel says nothing useful. */
+    /** (DPTV v2.9.31) DPTV-Server's movie categories; null from any other server (it refuses the action). */
+    suspend fun getSmartCategories(s: SourceEntity): XtSmartCatalog? =
+        http.get(api(s, "dptv_smart_categories"), s.userAgent) { input -> readSmartCategories(input) }
+
+    internal fun readSmartCategories(input: InputStream): XtSmartCatalog? {
+        val categories = ArrayList<XtSmartCategory>()
+        val films = HashMap<String, XtSmartFilm>()
+        var seen = false
+        JsonReader(input.reader(Charsets.UTF_8)).use { reader ->
+            reader.isLenient = true
+            if (reader.peek() != JsonToken.BEGIN_OBJECT) { reader.skipValue(); return@use }
+            reader.beginObject()
+            while (reader.hasNext()) {
+                when (reader.nextName()) {
+                    "categories" -> {
+                        seen = true
+                        reader.beginArray()
+                        while (reader.hasNext()) readSmartCategory(reader)?.let(categories::add)
+                        reader.endArray()
+                    }
+                    "films" -> {
+                        reader.beginObject()
+                        while (reader.hasNext()) {
+                            val id = reader.nextName()
+                            var release: String? = null
+                            var rating: Double? = null
+                            if (reader.peek() == JsonToken.BEGIN_ARRAY) {
+                                reader.beginArray()
+                                var i = 0
+                                while (reader.hasNext()) {
+                                    when {
+                                        reader.peek() == JsonToken.NULL -> reader.nextNull()
+                                        i == 0 -> release = reader.nextString()
+                                        i == 1 -> rating = reader.nextString().toDoubleOrNull()
+                                        else -> reader.skipValue()
+                                    }
+                                    i++
+                                }
+                                reader.endArray()
+                            } else reader.skipValue()
+                            films[id] = XtSmartFilm(release, rating)
+                        }
+                        reader.endObject()
+                    }
+                    else -> reader.skipValue()
+                }
+            }
+            reader.endObject()
+        }
+        return if (seen) XtSmartCatalog(categories, films) else null
+    }
+
+    private fun readSmartCategory(reader: JsonReader): XtSmartCategory? {
+        if (reader.peek() != JsonToken.BEGIN_OBJECT) { reader.skipValue(); return null }
+        var id = ""
+        var name = ""
+        var kind = ""
+        val streams = ArrayList<String>()
+        reader.beginObject()
+        while (reader.hasNext()) {
+            when (reader.nextName()) {
+                "id" -> id = reader.nextString()
+                "name" -> name = reader.nextString()
+                "kind" -> kind = reader.nextString()
+                "streams" -> {
+                    reader.beginArray()
+                    while (reader.hasNext()) {
+                        if (reader.peek() == JsonToken.NULL) reader.nextNull() else streams.add(reader.nextString())
+                    }
+                    reader.endArray()
+                }
+                else -> reader.skipValue()
+            }
+        }
+        reader.endObject()
+        return XtSmartCategory(id, name, kind, streams).takeIf { id.isNotBlank() && name.isNotBlank() }
+    }
+
     suspend fun getVodInfo(s: SourceEntity, vodId: String): XtTitleDetails? =
         http.get(api(s, "get_vod_info", "&vod_id=$vodId"), s.userAgent) { input -> readVodInfo(input) }
 
