@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
+
 package tv.own.owntv.features.movies
 
 import androidx.compose.foundation.focusGroup
