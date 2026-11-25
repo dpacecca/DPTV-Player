@@ -620,7 +620,8 @@ internal fun vodCategoryEntries(
                 LiveKey.Favorites -> OwnTVIcon.FAVORITE
                 LiveKey.History -> OwnTVIcon.HISTORY
                 LiveKey.All -> if (series) OwnTVIcon.SERIES else OwnTVIcon.MOVIES
-                else -> null
+                // (DPTV v2.10.1) An entry that brings its own icon: Discover, Movies by Genre / by Decade.
+                else -> item.icon
             },
             count = counts[item.key],
             mark = item.sourceId?.let(marks::get),

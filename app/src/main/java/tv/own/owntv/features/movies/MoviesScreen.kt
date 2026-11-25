@@ -195,6 +195,11 @@ fun MoviesScreen(
     var creatingCategory by remember { mutableStateOf(false) }
     // Fullscreen TMDB details window (§11.1); null = closed.
     var detailsMovie by remember { mutableStateOf<MovieEntity?>(null) }
+    // (DPTV v2.10.1) A film of DPTV-Server's categories opened with OK: its details page with actions.
+    var filmPage by remember { mutableStateOf<tv.own.owntv.core.repository.SmartCategoriesRepository.Film?>(null) }
+    var choosingSource by remember { mutableStateOf(false) }
+    var filmRestoreId by remember { mutableStateOf<Long?>(null) }
+    val filmRestoreFocus = remember { FocusRequester() }
     // "Set TMDB name" dialog target (§11.2 U5b); null = closed.
     var setTmdbNameMovie by remember { mutableStateOf<MovieEntity?>(null) }
     // In-app trailer playback (§7.3 U4); non-null = fullscreen player open with this YouTube key.
@@ -259,11 +264,10 @@ fun MoviesScreen(
     val smartRail = remember(smartCats, cinematic, discoverTitle, byGenreTitle, byDecadeTitle) {
         if (!cinematic || smartCats.isEmpty()) emptyList()
         else buildList {
+            // (v2.10.1) Trending and New releases live in Discover only; each entry has its own icon.
             add(tv.own.owntv.features.live.LiveRailItem(DiscoverKey, title = discoverTitle, icon = OwnTVIcon.SPARKLE))
-            smartCats.filter { it.kind == "trending" || it.kind == "new" }
-                .forEach { add(tv.own.owntv.features.live.LiveRailItem(smartKey(it.id), title = it.name)) }
-            if (smartCats.any { it.kind == "genre" }) add(tv.own.owntv.features.live.LiveRailItem(smartKey(GenreGroup), title = byGenreTitle))
-            if (smartCats.any { it.kind == "decade" }) add(tv.own.owntv.features.live.LiveRailItem(smartKey(DecadeGroup), title = byDecadeTitle))
+            if (smartCats.any { it.kind == "genre" }) add(tv.own.owntv.features.live.LiveRailItem(smartKey(GenreGroup), title = byGenreTitle, icon = OwnTVIcon.TAGS))
+            if (smartCats.any { it.kind == "decade" }) add(tv.own.owntv.features.live.LiveRailItem(smartKey(DecadeGroup), title = byDecadeTitle, icon = OwnTVIcon.CALENDAR))
         }
     }
     val railItems = remember(baseRail, smartRail) {
@@ -277,6 +281,7 @@ fun MoviesScreen(
     val menuKey = when (smartCats.firstOrNull { it.id == selectedKey.smartId() }?.kind) {
         "genre" -> smartKey(GenreGroup)
         "decade" -> smartKey(DecadeGroup)
+        "trending", "new" -> DiscoverKey
         else -> selectedKey
     }
     val selectedIndex = railItems.indexOfFirst { it.key == menuKey }.coerceAtLeast(0)
@@ -527,6 +532,10 @@ fun MoviesScreen(
             }
         }
     }
+    // (DPTV v2.10.1) Back in Discover opens the categories.
+    androidx.activity.compose.BackHandler(
+        enabled = cinematic && !categoriesOpen && smartCats.isNotEmpty() && selectedKey == DiscoverKey,
+    ) { categoriesOpen = true }
     // Movies opens on Discover once the categories are known (a remembered provider category still wins).
     var smartLanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(cinematic, smartCats.isNotEmpty()) {
@@ -691,7 +700,9 @@ fun MoviesScreen(
                         progressOf = { m -> movieProgress[m.id]?.takeIf { it.durationMs > 0 }?.let { it.positionMs.toFloat() / it.durationMs } },
                         watchedOf = { m -> movieProgress[m.id]?.let { vm.isMovieCompleted(it) } == true },
                         onFocus = { m -> vm.onMovieFocused(m) },
-                        onPlay = { m -> startMovie(m) },
+                        onOpen = { f -> vm.onMovieFocused(f.movie); filmRestoreId = f.movie.id; choosingSource = false; filmPage = f },
+                        restoreId = filmRestoreId,
+                        restoreFocus = filmRestoreFocus,
                         onMenu = { m -> openMenu(m, -1) },
                         onLeftEdge = { categoriesOpen = true },
                     )
@@ -705,10 +716,17 @@ fun MoviesScreen(
                         )
                     } else {
                         MovieCarousels(
-                            categories = smartRows, start = fx(84), end = fx(64), firstFocus = firstItemFocus,
+                            // (DPTV v2.10.1) A genre's or decade's carousel leads with its best-rated films.
+                            categories = remember(smartRows) {
+                                smartRows.map { c ->
+                                    if (c.kind == "genre" || c.kind == "decade") c.copy(films = c.films.sortedFor(SmartSort.RATING)) else c
+                                }
+                            },
+                            start = fx(84), end = fx(64), firstFocus = firstItemFocus,
                             actions = tileActions,
                             onViewMore = { c ->
-                                smartSort = SmartSort.POPULAR
+                                // A genre or decade opens best rated first; Trending and New releases in their own order.
+                                smartSort = if (c.kind == "genre" || c.kind == "decade") SmartSort.RATING else SmartSort.POPULAR
                                 vm.select(smartKey(c.id))
                                 scope.launch {
                                     repeat(20) {
@@ -1170,6 +1188,66 @@ fun MoviesScreen(
             withFrameNanos { }
             runCatching { contextFocus.requestFocus() }
         }
+    }
+
+    // (DPTV v2.10.1) A film's details page from DPTV-Server's categories: Play (which source, when the
+    // film has several), Play trailer, Add to favourites, Mark as watched, Download, Remove from history,
+    // Update details and Set TMDB name. Back closes it, back onto the film's tile.
+    LaunchedEffect(filmPage) {
+        if (filmPage != null || filmRestoreId == null) return@LaunchedEffect
+        repeat(10) {
+            withFrameNanos { }
+            if (runCatching { filmRestoreFocus.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
+        }
+    }
+    filmPage?.let { film ->
+        val m = film.movie
+        val raw = film.sources.first()
+        val cache = selectedMovieMeta?.takeIf { it.movieId == m.id }?.cache
+        val provider by androidx.compose.runtime.produceState<tv.own.owntv.core.parser.XtTitleDetails?>(null, raw.id) { value = vm.providerDetails(raw) }
+        val trailerKey = (if (metadataMode.enrich) cache?.trailerKey else null) ?: provider?.trailerKey
+        val inHistory by androidx.compose.runtime.produceState(false, m.id) { value = vm.isInHistory(m) }
+        val watched = movieProgress[m.id]?.let { vm.isMovieCompleted(it) } == true
+        val actions = buildList {
+            add(tv.own.owntv.features.shell.components.DetailsAction(stringResource(R.string.content_play), OwnTVIcon.PLAY) {
+                if (film.sources.size > 1) choosingSource = true else { filmPage = null; startMovie(raw) }
+            })
+            add(tv.own.owntv.features.shell.components.DetailsAction(stringResource(R.string.content_play_trailer), OwnTVIcon.PLAY_CIRCLE, enabled = trailerKey != null) {
+                trailerKey?.let { filmPage = null; trailerTitle = m.name; trailerVideoKey = it }
+            })
+            add(tv.own.owntv.features.shell.components.DetailsAction(
+                stringResource(if (favoriteIds.contains(m.id)) R.string.content_remove_favourite else R.string.content_add_favourite), OwnTVIcon.FAVORITE,
+            ) { vm.toggleFavorite(m) })
+            add(tv.own.owntv.features.shell.components.DetailsAction(
+                stringResource(if (watched) R.string.content_mark_unwatched else R.string.content_mark_watched), OwnTVIcon.CHECK,
+            ) { if (watched) vm.markMovieUnwatched(m) else vm.markMovieWatched(m) })
+            add(tv.own.owntv.features.shell.components.DetailsAction(stringResource(R.string.content_download), OwnTVIcon.DOWNLOADS) {
+                if (downloadStates[raw.id] != null) toast.show(alreadyDownloadedMessage) else vm.download(raw)
+            })
+            add(tv.own.owntv.features.shell.components.DetailsAction(stringResource(R.string.content_remove_history), OwnTVIcon.HISTORY, enabled = inHistory) {
+                vm.removeFromHistory(m.id)
+            })
+            if (metadataMode.enrich) {
+                add(tv.own.owntv.features.shell.components.DetailsAction(stringResource(R.string.content_refetch_tmdb), OwnTVIcon.REFRESH) {
+                    toast.show(refetchingTmdbMessage); vm.refetchMovieMeta(raw)
+                })
+                add(tv.own.owntv.features.shell.components.DetailsAction(stringResource(R.string.content_set_tmdb_name), OwnTVIcon.PENCIL) {
+                    filmPage = null; setTmdbNameMovie = raw
+                })
+            }
+        }
+        MediaDetailsScreen(
+            details = buildMovieDetails(m, cache, metadataMode.tmdbWins).withProvider(provider),
+            onExit = { choosingSource = false; filmPage = null },
+            actions = actions,
+            choices = if (!choosingSource) null else film.sources.map { src ->
+                tv.own.owntv.features.shell.components.DetailsAction(src.name, OwnTVIcon.PLAY) {
+                    choosingSource = false; filmPage = null; startMovie(src)
+                }
+            },
+            choicesTitle = stringResource(R.string.movies_choose_source),
+            onChoicesDismiss = { choosingSource = false },
+        )
     }
 
     // Windowed TMDB details popup (§11.1) — read-only, Back exits.
