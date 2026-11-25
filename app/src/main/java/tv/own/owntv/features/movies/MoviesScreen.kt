@@ -264,11 +264,10 @@ fun MoviesScreen(
     val smartRail = remember(smartCats, cinematic, discoverTitle, byGenreTitle, byDecadeTitle) {
         if (!cinematic || smartCats.isEmpty()) emptyList()
         else buildList {
+            // (v2.10.1) Trending and New releases live in Discover only; each entry has its own icon.
             add(tv.own.owntv.features.live.LiveRailItem(DiscoverKey, title = discoverTitle, icon = OwnTVIcon.SPARKLE))
-            smartCats.filter { it.kind == "trending" || it.kind == "new" }
-                .forEach { add(tv.own.owntv.features.live.LiveRailItem(smartKey(it.id), title = it.name)) }
-            if (smartCats.any { it.kind == "genre" }) add(tv.own.owntv.features.live.LiveRailItem(smartKey(GenreGroup), title = byGenreTitle))
-            if (smartCats.any { it.kind == "decade" }) add(tv.own.owntv.features.live.LiveRailItem(smartKey(DecadeGroup), title = byDecadeTitle))
+            if (smartCats.any { it.kind == "genre" }) add(tv.own.owntv.features.live.LiveRailItem(smartKey(GenreGroup), title = byGenreTitle, icon = OwnTVIcon.TILES))
+            if (smartCats.any { it.kind == "decade" }) add(tv.own.owntv.features.live.LiveRailItem(smartKey(DecadeGroup), title = byDecadeTitle, icon = OwnTVIcon.CALENDAR))
         }
     }
     val railItems = remember(baseRail, smartRail) {
@@ -282,6 +281,7 @@ fun MoviesScreen(
     val menuKey = when (smartCats.firstOrNull { it.id == selectedKey.smartId() }?.kind) {
         "genre" -> smartKey(GenreGroup)
         "decade" -> smartKey(DecadeGroup)
+        "trending", "new" -> DiscoverKey
         else -> selectedKey
     }
     val selectedIndex = railItems.indexOfFirst { it.key == menuKey }.coerceAtLeast(0)
