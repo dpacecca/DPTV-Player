@@ -380,4 +380,6 @@
     <string name="movies_by_genre">Movies by Genre</string>
     <!-- Translators: (DPTV) Movies menu: carousels of every decade. -->
     <string name="movies_by_decade">Movies by Decade</string>
+    <!-- Translators: (DPTV) Heading over the list of copies of a film to play (4K, HD, another category). -->
+    <string name="movies_choose_source">Choose a source</string>
 </resources>

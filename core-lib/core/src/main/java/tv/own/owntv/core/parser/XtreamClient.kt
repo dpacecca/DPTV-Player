@@ -74,8 +74,11 @@ data class XtSeasonInfo(val number: Int, val name: String?, val overview: String
 /** (DPTV v2.9.31) One of DPTV-Server's movie categories: its films' stream ids, in the server's order. */
 data class XtSmartCategory(val id: String, val name: String, val kind: String, val streamIds: List<String>)
 
-/** (DPTV v2.9.31) A film's release date ("YYYY-MM-DD" or "YYYY") and rating, as DPTV-Server knows them. */
-data class XtSmartFilm(val release: String?, val rating: Double?)
+/**
+ * (DPTV v2.9.31) A film's release date ("YYYY-MM-DD" or "YYYY") and rating, as DPTV-Server knows them;
+ * (v2.10.1) its "Title (year)" and the stream ids of its other copies (the same film listed again).
+ */
+data class XtSmartFilm(val release: String?, val rating: Double?, val title: String? = null, val others: List<String> = emptyList())
 
 /** (DPTV v2.9.31) DPTV-Server's `dptv_smart_categories` answer. */
 data class XtSmartCatalog(val categories: List<XtSmartCategory>, val films: Map<String, XtSmartFilm>)
@@ -309,6 +312,8 @@ class XtreamClient(private val http: HttpClient) {
                             val id = reader.nextName()
                             var release: String? = null
                             var rating: Double? = null
+                            var title: String? = null
+                            val others = ArrayList<String>()
                             if (reader.peek() == JsonToken.BEGIN_ARRAY) {
                                 reader.beginArray()
                                 var i = 0
@@ -317,13 +322,21 @@ class XtreamClient(private val http: HttpClient) {
                                         reader.peek() == JsonToken.NULL -> reader.nextNull()
                                         i == 0 -> release = reader.nextString()
                                         i == 1 -> rating = reader.nextString().toDoubleOrNull()
+                                        i == 2 && reader.peek() == JsonToken.STRING -> title = reader.nextString()
+                                        i == 3 && reader.peek() == JsonToken.BEGIN_ARRAY -> {
+                                            reader.beginArray()
+                                            while (reader.hasNext()) {
+                                                if (reader.peek() == JsonToken.NULL) reader.nextNull() else others.add(reader.nextString())
+                                            }
+                                            reader.endArray()
+                                        }
                                         else -> reader.skipValue()
                                     }
                                     i++
                                 }
                                 reader.endArray()
                             } else reader.skipValue()
-                            films[id] = XtSmartFilm(release, rating)
+                            films[id] = XtSmartFilm(release, rating, title?.takeIf { it.isNotBlank() }, others)
                         }
                         reader.endObject()
                     }

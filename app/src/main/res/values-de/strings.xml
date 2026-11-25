@@ -374,4 +374,5 @@
     <string name="movies_sort_release_date">Erscheinungsdatum</string>
     <string name="movies_by_genre">Filme nach Genre</string>
     <string name="movies_by_decade">Filme nach Jahrzehnt</string>
+    <string name="movies_choose_source">Quelle wählen</string>
 </resources>

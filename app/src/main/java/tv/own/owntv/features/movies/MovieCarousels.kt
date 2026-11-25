@@ -72,7 +72,11 @@ internal class MovieTileActions(
     val progressOf: (MovieEntity) -> Float?,
     val watchedOf: (MovieEntity) -> Boolean,
     val onFocus: (MovieEntity) -> Unit,
-    val onPlay: (MovieEntity) -> Unit,
+    /** (v2.10.1) OK: the film's details page, with Play and the rest. */
+    val onOpen: (SmartCategoriesRepository.Film) -> Unit,
+    /** The film whose details were open, and the requester that brings focus back to its tile. */
+    val restoreId: Long?,
+    val restoreFocus: FocusRequester,
     val onMenu: (MovieEntity) -> Unit,
     /** ◀ at the start of a row: the categories sheet. */
     val onLeftEdge: () -> Unit,
@@ -251,9 +255,10 @@ private fun MovieTile(
         width = width, height = height,
         progress = actions.progressOf(movie),
         watched = actions.watchedOf(movie),
-        onClick = { actions.onPlay(movie) },
+        onClick = { actions.onOpen(film) },
         onLongClick = { actions.onMenu(movie) },
         modifier = modifier
+            .then(if (movie.id == actions.restoreId) Modifier.focusRequester(actions.restoreFocus) else Modifier)
             .onFocusChanged { if (it.isFocused) actions.onFocus(movie) }
             .onPreviewKeyEvent { e ->
                 e.type == KeyEventType.KeyDown && e.key == Key.Menu && run { actions.onMenu(movie); true }

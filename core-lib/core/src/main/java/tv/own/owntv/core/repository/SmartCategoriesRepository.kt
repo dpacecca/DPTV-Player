@@ -21,8 +21,17 @@ class SmartCategoriesRepository(
     private val movieDao: MovieDao,
     private val xtream: XtreamClient,
 ) {
-    /** A film of a category, with the release date ("YYYY-MM-DD" or "YYYY") and rating to sort by. */
-    data class Film(val movie: MovieEntity, val release: String?, val rating: Double?)
+    /**
+     * A film of a category, with the release date ("YYYY-MM-DD" or "YYYY") and rating to sort by.
+     * [movie] carries the server's "Title (year)" as its name; (v2.10.1) [sources] is every copy of the
+     * film on this device, this one first, under the provider's own names, for "which source?".
+     */
+    data class Film(
+        val movie: MovieEntity,
+        val release: String?,
+        val rating: Double?,
+        val sources: List<MovieEntity> = listOf(movie),
+    )
 
     data class Category(val id: String, val name: String, val kind: String, val films: List<Film>)
 
@@ -38,14 +47,22 @@ class SmartCategoriesRepository(
             val catalog = runCatching { xtream.getSmartCategories(source) }
                 .onFailure { Log.d(TAG, "no movie categories from source $sourceId: ${it.javaClass.simpleName}") }
                 .getOrNull() ?: continue
-            val wanted = catalog.categories.flatMap { it.streamIds }.distinct()
+            val wanted = (catalog.categories.flatMap { it.streamIds } + catalog.films.values.flatMap { it.others }).distinct()
             val byRemote = HashMap<String, MovieEntity>(wanted.size)
             wanted.chunked(500).forEach { chunk ->
                 movieDao.findByRemoteIds(sourceId, chunk).forEach { m -> m.remoteId?.let { byRemote[it] = m } }
             }
             catalog.categories.mapNotNullTo(out) { c ->
                 val films = c.streamIds.mapNotNull { id ->
-                    byRemote[id]?.let { m -> catalog.films[id].let { f -> Film(m, f?.release, f?.rating ?: m.rating?.takeIf { it > 0 }) } }
+                    byRemote[id]?.let { m ->
+                        val f = catalog.films[id]
+                        Film(
+                            movie = f?.title?.let { m.copy(name = it) } ?: m,
+                            release = f?.release,
+                            rating = f?.rating ?: m.rating?.takeIf { it > 0 },
+                            sources = listOf(m) + f?.others.orEmpty().mapNotNull(byRemote::get),
+                        )
+                    }
                 }
                 if (films.isEmpty()) null else Category("$sourceId:${c.id}", c.name, c.kind, films)
             }

@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -71,6 +73,14 @@ data class MediaDetailsUi(
     val cast: List<tv.own.owntv.core.metadata.CastMember> = emptyList(),
 )
 
+/** (DPTV v2.10.1) A button on the details page: Play, Play trailer, Add to favourites… */
+data class DetailsAction(
+    val label: String,
+    val icon: tv.own.owntv.ui.components.OwnTVIcon,
+    val enabled: Boolean = true,
+    val onClick: () -> Unit,
+)
+
 /**
  * TMDB details (plan §11.1) as a Stage page in its own full-screen window: the backdrop edge to edge,
  * fading into the page, then the eyebrow (episode line), the title 64/800, the meta line, genres as
@@ -78,9 +88,21 @@ data class MediaDetailsUi(
  * selectable** — the page owns focus and turns Up/Down into a scroll, so the D-pad cannot leak behind.
  */
 @Composable
-fun MediaDetailsScreen(details: MediaDetailsUi, onExit: () -> Unit, modifier: Modifier = Modifier) {
+fun MediaDetailsScreen(
+    details: MediaDetailsUi,
+    onExit: () -> Unit,
+    modifier: Modifier = Modifier,
+    /** (DPTV v2.10.1) Buttons under the title, first one focused; empty keeps the page read-only. */
+    actions: List<DetailsAction> = emptyList(),
+    /** (DPTV v2.10.1) A choice over the page (which source to play), with its title; null when none. */
+    choices: List<DetailsAction>? = null,
+    choicesTitle: String = "",
+    onChoicesDismiss: () -> Unit = {},
+) {
     val scroll = rememberScrollState()
     val focus = remember { FocusRequester() }
+    val firstAction = remember { FocusRequester() }
+    val firstChoice = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
     val step = 260f
     val onKey: (androidx.compose.ui.input.key.KeyEvent) -> Boolean = onKey@{ e ->
@@ -99,7 +121,10 @@ fun MediaDetailsScreen(details: MediaDetailsUi, onExit: () -> Unit, modifier: Mo
     }
     val page = stageTone(Color(0xFF070B0E), LocalStagePalette.current.page)
     tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onExit, stageLayout = true, stageScaled = false) {
-        LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { focus.requestFocus() } }
+        LaunchedEffect(Unit) {
+            kotlinx.coroutines.delay(60)
+            if (actions.isEmpty() || !runCatching { firstAction.requestFocus() }.getOrDefault(false)) runCatching { focus.requestFocus() }
+        }
         Box(modifier.fillMaxSize().background(page).trapAllFocusExit()) {
             if (!details.backdropUrl.isNullOrBlank()) {
                 AsyncImage(
@@ -137,6 +162,23 @@ fun MediaDetailsScreen(details: MediaDetailsUi, onExit: () -> Unit, modifier: Mo
                         }
                     }
                 }
+                if (actions.isNotEmpty()) {
+                    // One line that scrolls sideways: Up and Down stay the page's scroll.
+                    Row(
+                        Modifier.padding(top = 30.mpx).fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(14.mpx),
+                    ) {
+                        actions.forEachIndexed { i, a ->
+                            tv.own.owntv.ui.stage.StageButton(
+                                text = a.label, icon = a.icon, iconFilled = i == 0, tinted = i == 0,
+                                onClick = { if (a.enabled) a.onClick() },
+                                height = 60.mpx, textSize = 20,
+                                modifier = (if (i == 0) Modifier.focusRequester(firstAction) else Modifier)
+                                    .alpha(if (a.enabled) 1f else 0.45f),
+                            )
+                        }
+                    }
+                }
                 if (!details.plot.isNullOrBlank()) {
                     DetailsLabel(stringResource(R.string.content_media_overview))
                     Text(details.plot, style = stageText(21, 400).copy(lineHeight = (21 * 1.55f).mpxSp), color = StageColors.ItemText, modifier = Modifier.widthIn(max = 1300.mpx))
@@ -146,6 +188,26 @@ fun MediaDetailsScreen(details: MediaDetailsUi, onExit: () -> Unit, modifier: Mo
                     CastGrid(details.cast)
                 }
                 Text(stringResource(R.string.content_media_press_back), style = stageText(16, 600), color = StageColors.Dim, modifier = Modifier.padding(top = 40.mpx))
+            }
+            if (choices != null) {
+                LaunchedEffect(Unit) { kotlinx.coroutines.delay(40); runCatching { firstChoice.requestFocus() } }
+                Box(
+                    Modifier.fillMaxSize().background(StageColors.Scrim)
+                        .onKeyEvent { e ->
+                            if (e.key == Key.Back) { if (e.type == KeyEventType.KeyUp) onChoicesDismiss(); true } else false
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    tv.own.owntv.ui.stage.StageMenu(Modifier.width(760.mpx).trapAllFocusExit()) {
+                        tv.own.owntv.ui.stage.StageMenuHeader(title = choicesTitle, subtitle = null)
+                        choices.forEachIndexed { i, c ->
+                            tv.own.owntv.ui.stage.StageMenuItem(
+                                text = c.label, icon = c.icon, enabled = c.enabled, onClick = c.onClick,
+                                modifier = if (i == 0) Modifier.focusRequester(firstChoice) else Modifier,
+                            )
+                        }
+                    }
+                }
             }
         }
     }
