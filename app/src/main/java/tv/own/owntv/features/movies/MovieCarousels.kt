@@ -145,19 +145,7 @@ internal fun MovieCarousels(
                                         .onPreviewKeyEvent { e ->
                                             e.type == KeyEventType.KeyDown && e.key == Key.DirectionLeft && run { actions.onLeftEdge(); true }
                                         },
-                                ) {
-                                    Box(Modifier.fillMaxSize().padding(14.mpx), contentAlignment = Alignment.Center) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text(
-                                                category.name, style = stageText(24, 800), color = StageColors.Text,
-                                                maxLines = 3, overflow = TextOverflow.Ellipsis,
-                                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                            )
-                                            Spacer(Modifier.height(12.mpx))
-                                            OwnTVIcon(OwnTVIcon.CHEVRON, StageColors.Muted, Modifier.size(34.mpx))
-                                        }
-                                    }
-                                }
+                                ) { CategoryCover(category, category.films.firstOrNull()?.movie?.let(actions.posterOf)) }
                             }
                             itemsIndexed(category.films.take(CarouselFilms), key = { _, f -> f.movie.id }) { _, film ->
                                 MovieTile(film = film, width = 160.mpx, height = 240.mpx, actions = actions)
