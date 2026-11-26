@@ -32,10 +32,10 @@ import tv.own.owntv.ui.theme.stageText
 /** (DPTV v2.10.2) A category cover's two gradient colours and its mark. */
 private data class CoverStyle(val top: Color, val bottom: Color, val icon: OwnTVIcon)
 
-private fun rgb(hex: Long) = Color(0xFF000000 or hex)
+private fun rgb(hex: Int) = Color(0xFF000000L or hex.toLong())
 
 /** Each TMDB genre in a colour of its own; anything else falls back to the category's kind. */
-private val GenreColours: Map<String, Pair<Long, Long>> = mapOf(
+private val GenreColours: Map<String, Pair<Int, Int>> = mapOf(
     "action" to (0xE2483D to 0x5A1010),
     "adventure" to (0xE89B2C to 0x5C2E06),
     "animation" to (0x3BC98A to 0x0F4A3A),
