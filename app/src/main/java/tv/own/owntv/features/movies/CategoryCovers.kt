@@ -110,28 +110,38 @@ internal fun BoxScope.CategoryCover(category: SmartCategoriesRepository.Category
             Brush.verticalGradient(0f to style.top.copy(alpha = 0.35f), 0.45f to Color.Transparent, 1f to style.bottom.copy(alpha = 0.95f)),
         ),
     )
-    Column(Modifier.fillMaxSize().padding(14.mpx)) {
-        Box(
-            Modifier.size(40.mpx).background(Color.White.copy(alpha = 0.18f), androidx.compose.foundation.shape.CircleShape),
-            contentAlignment = Alignment.Center,
-        ) { OwnTVIcon(style.icon, Color.White, Modifier.size(24.mpx)) }
-        Spacer(Modifier.weight(1f))
-        val decade = category.kind == "decade"
-        Text(
-            category.name,
-            // A long single word ("Documentary") steps down so it fits the tile's width.
-            style = if (decade) stageText(38, 900).copy(lineHeight = 40.mpxSp)
-            else if (category.name.split(' ').maxOf { it.length } > 9) stageText(20, 900).copy(lineHeight = 22.mpxSp)
-            else stageText(24, 900).copy(lineHeight = 26.mpxSp),
-            color = Color.White, maxLines = 3, overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(Modifier.height(8.mpx))
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+    val isDecade = category.kind == "decade"
+    if (isDecade) {
+        // Decade tile: year prominently in center.
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                category.films.size.toString(), style = stageText(16, 700), color = Color.White.copy(alpha = 0.8f),
-                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                category.name.take(4) + "'s",
+                style = stageText(48, 900),
+                color = Color.White, maxLines = 1,
             )
-            OwnTVIcon(OwnTVIcon.CHEVRON, Color.White, Modifier.size(22.mpx))
+        }
+    } else {
+        // Genre/category tile: icon chip, name, count + chevron.
+        Column(Modifier.fillMaxSize().padding(14.mpx)) {
+            Box(
+                Modifier.size(40.mpx).background(Color.White.copy(alpha = 0.18f), androidx.compose.foundation.shape.CircleShape),
+                contentAlignment = Alignment.Center,
+            ) { OwnTVIcon(style.icon, Color.White, Modifier.size(24.mpx)) }
+            Spacer(Modifier.weight(1f))
+            Text(
+                category.name,
+                style = if (category.name.split(' ').maxOf { it.length } > 9) stageText(20, 900).copy(lineHeight = 22.mpxSp)
+                else stageText(24, 900).copy(lineHeight = 26.mpxSp),
+                color = Color.White, maxLines = 3, overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(8.mpx))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(
+                    category.films.size.toString(), style = stageText(16, 700), color = Color.White.copy(alpha = 0.8f),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+                OwnTVIcon(OwnTVIcon.CHEVRON, Color.White, Modifier.size(22.mpx))
+            }
         }
     }
 }
