@@ -97,6 +97,13 @@ internal fun BoxScope.CategoryCover(category: SmartCategoriesRepository.Category
             modifier = Modifier.fillMaxSize().alpha(0.32f),
         )
     }
+    // Large background graphic, semi-transparent, behind text.
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        OwnTVIcon(
+            style.icon, Color.White.copy(alpha = 0.08f),
+            Modifier.size(180.mpx),
+        )
+    }
     // The colour returns over the poster towards the bottom, so the name always reads.
     Box(
         Modifier.fillMaxSize().background(
