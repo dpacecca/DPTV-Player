@@ -221,6 +221,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	sync-check:
 1	log	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	zap key press
 1	log	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	zap:
+1	technical	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	's
 1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	action
 1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	adventure
 1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	animation
