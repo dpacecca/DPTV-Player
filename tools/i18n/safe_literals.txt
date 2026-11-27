@@ -221,6 +221,30 @@
 1	technical	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	sync-check:
 1	log	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	zap key press
 1	log	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	zap:
+1	technical	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	's
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	action
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	adventure
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	animation
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	comedy
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	crime
+2	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	decade
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	documentary
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	drama
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	family
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	fantasy
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	genre
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	history
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	horror
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	music
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	mystery
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	new
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	romance
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	science fiction
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	thriller
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	trending
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	tv movie
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	war
+1	json	app/src/main/java/tv/own/owntv/features/movies/CategoryCovers.kt	western
 1	protocol	app/src/main/java/tv/own/owntv/features/movies/MovieCarousels.kt	more
 1	json	app/src/main/java/tv/own/owntv/features/movies/MovieCarousels.kt	name
 1	technical	app/src/main/java/tv/own/owntv/features/movies/MovieCarousels.kt	· ${category.films.size}
