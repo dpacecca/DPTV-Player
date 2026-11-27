@@ -117,7 +117,7 @@ internal fun BoxScope.CategoryCover(category: SmartCategoriesRepository.Category
             Text(
                 category.name.take(4) + "'s",
                 style = stageText(48, 900),
-                color = Color.White, maxLines = 1,
+                color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
     } else {
